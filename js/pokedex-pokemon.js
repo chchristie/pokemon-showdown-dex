@@ -105,24 +105,24 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		buf += '</table></dd>';
 
 		buf += '<dt>Evolution:</dt> <dd>';
-		var template = pokemon;
-		while (template.prevo) template = Dex.species.get(template.prevo);
-		if (template.evos) {
+		var basic = pokemon;
+		while (basic.prevo) basic = Dex.species.get(basic.prevo);
+		if (basic.evos) {
 			buf += '<table class="evos"><tr><td>';
-			var evos = [template];
+			var evos = [basic.name];
+			var template = basic;
 			while (evos) {
-				if (evos[0] === 'dustox') evos = ['beautifly','dustox'];
+				if (evos[0] === 'Dustox') evos = ['Beautifly','Dustox'];
+				if (evos[0] === 'Goodra-Hisui') evos = ['Goodra','Goodra-Hisui'];
 				for (var i=0; i<evos.length; i++) {
 					template = Dex.species.get(evos[i]);
-					if (i <= 0) {
-						if (!evos[0].exists) {
-							if (evos[1] === 'dustox') {
-								buf += '</td><td class="arrow"><span>&rarr;<br />&rarr;</span></td><td>';
-							} else if (template.prevo) {
-								buf += '</td><td class="arrow"><span><abbr title="' + this.getEvoMethod(template) + '">&rarr;</abbr></span></td><td>';
-							} else {
-								buf += '</td><td class="arrow"><span>&rarr;</span></td><td>';
-							}
+					if (i <= 0 && evos[0] !== basic.name) {
+						if (evos[0] === 'Dustox' || evos[0] === 'Goodra') {
+							buf += '</td><td class="arrow"><span>&rarr;<br />&rarr;</span></td><td>';
+						} else if (template.prevo) {
+							buf += '</td><td class="arrow"><span><abbr title="' + this.getEvoMethod(template) + '">&rarr;</abbr></span></td><td>';
+						} else {
+							buf += '</td><td class="arrow"><span>&rarr;</span></td><td>';
 						}
 					}
 					var name = (template.forme ? template.baseSpecies+'<small>-'+template.forme+'</small>' : template.name);
