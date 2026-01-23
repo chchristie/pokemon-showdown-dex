@@ -326,7 +326,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		}
 	},
 	getEvoMethod: function(evo) {
-		let condition = evo.evoCondition ? ` ${evo.evoCondition}` : ``;
+		var condition = evo.evoCondition ? ` ${evo.evoCondition}` : ``;
 		switch (evo.evoType) {
 		case 'levelExtra':
 			return 'level-up' + condition;
@@ -335,15 +335,15 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		case 'levelHold':
 			return 'level-up holding ' + evo.evoItem + condition;
 		case 'useItem':
-			return evo.evoItem;
+			return evo.evoItem + condition;
 		case 'levelMove':
 			return 'level-up with ' + evo.evoMove + condition;
 		case 'trade':
-			return 'trade';
+			return 'trade' + condition;
 		case 'other':
 			return evo.evoCondition;
 		default:
-			return 'level ' + evo.evoLevel;
+			return 'level ' + evo.evoLevel + condition;
 		}
 	},
 	selectTab: function(e) {
