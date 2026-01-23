@@ -92,6 +92,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		// pokemon
 		buf += '<h3>Pok&eacute;mon with this ability</h3>';
 		buf += '<ul class="utilichart nokbd">';
+		buf += '<li>Loading...</li>';
 		buf += '</ul>';
 
 		buf += '</div>';
@@ -105,11 +106,27 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		var buf = '';
 		for (var pokemonid in BattlePokedex) {
 			var template = BattlePokedex[pokemonid];
+			if (!template.abilities) continue;
 			if (template.isNonstandard && !ability.isNonstandard) continue;
 			if (template.abilities['0'] === ability.name || template.abilities['1'] === ability.name || template.abilities['H'] === ability.name) {
 				buf += BattleSearch.renderPokemonRow(template);
 			}
 		}
+
+		var hasNonstandard = false;
+		for (var pokemonid in BattlePokedex) {
+			var template = BattlePokedex[pokemonid];
+			if (!template.abilities) continue;
+			if (!(template.isNonstandard && !ability.isNonstandard)) continue;
+			if (template.abilities['0'] === ability.name || template.abilities['1'] === ability.name || template.abilities['H'] === ability.name) {
+				if (!hasNonstandard) {
+					buf += '<li class="resultheader"><h3>Unavailable Pok&eacute;mon with this ability</h3></li>';
+					hasNonstandard = true;
+				}
+				buf += BattleSearch.renderPokemonRow(template);
+			}
+		}
+
 		this.$('.utilichart').html(buf);
 	}
 });
