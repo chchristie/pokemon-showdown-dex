@@ -18,15 +18,15 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		buf += '<h1><a href="/moves/'+id+'" data-target="push" class="subtle">'+move.name+'</a></h1>';
 
 		if (move.id === 'magikarpsrevenge') {
-			buf += '<div class="warning"><strong>Note:</strong> Made for testing on Pok&eacute;mon Showdown, not a real move.</div>';
+			buf += '<div class="warning">Made for testing; <strong>not a real move</strong>.</div>';
 		} else if (move.isNonstandard) {
-			buf += '<div class="warning"><strong>Note:</strong> ';
+			buf += '<div class="warning">';
 			switch (move.isNonstandard) {
 			case 'Past':
-				buf += 'This move is only available in past generations.';
+				buf += 'Only available in <strong>past generations</strong>.';
 				break;
 			case 'Future':
-				buf += 'This move is only available in future generations.';
+				buf += 'Only available in <strong>future generations</strong>.';
 				break;
 			case 'Unobtainable':
 				if (move.isMax) {
@@ -38,13 +38,13 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				}
 				break;
 			case 'CAP':
-				buf += 'This is a made-up move by <a href="http://www.smogon.com/cap/" target="_blank">Smogon CAP</a>.';
+				buf += 'A <strong>made-up</strong> move by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.';
 				break;
 			case 'LGPE':
-				buf += 'This move is only available in Let\'s Go! Pikachu and Eevee.';
+				buf += 'Only available in Let\'s Go! Pikachu and Eevee.';
 				break;
 			case 'Custom':
-				buf += 'This is a custom move, not available during normal gameplay.';
+				buf += 'A custom move, not available during normal gameplay.';
 				break;
 			}
 			buf += '</div>';

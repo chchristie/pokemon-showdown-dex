@@ -65,7 +65,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
 		buf += '<h1><a href="/abilities/'+id+'" data-target="push" class="subtle">'+ability.name+'</a></h1>';
 
-		if (ability.isNonstandard && ability.id !== 'noability') buf += '<div class="warning"><strong>Note:</strong> This is a made-up ability by <a href="http://www.smogon.com/cap/" target="_blank">Smogon CAP</a>.</div>';
+		if (ability.isNonstandard && ability.id !== 'noability') buf += '<div class="warning">A <strong>made-up</strong> ability by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
 
 		buf += '<p>'+Dex.escapeHTML(ability.desc)+'</p>';
 
@@ -826,7 +826,7 @@ var PokedexTierPanel = PokedexResultPanel.extend({
 			buf += '<p>"NFE" (Not Fully Evolved) as a tier refers to NFE Pokémon that aren\'t legal in LC and don\'t make the usage cutoff for a tier such as PU.</p>';
 		}
 
-		if (id.startsWith('cap')) buf += '<div class="warning"><strong>Note:</strong> <a href="http://www.smogon.com/cap/" target="_blank">Smogon CAP</a> is a project to make up Pok&eacute;mon.</div>';
+		if (id.startsWith('cap')) buf += '<div class="warning"><a href="http://www.smogon.com/cap/" target="_blank">Smogon CAP</a> is a project to make up Pok&eacute;mon.</div>';
 
 		// buf += '<p></p>';
 

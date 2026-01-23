@@ -20,19 +20,19 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 
 		if (pokemon.isNonstandard) {
 			if (id === 'missingno') {
-				buf += '<div class="warning"><strong>Note:</strong> This is a glitch Pok&eacute;mon from Red/Blue/Yellow.</div>';
+				buf += '<div class="warning">A <strong>glitch Pok&eacute;mon</strong> from Red/Blue/Yellow.</div>';
 			} else if (id.substr(0, 8) === 'pokestar') {
-				buf += '<div class="warning"><strong>Note:</strong> This is a Pok&eacute;mon from <a href="https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9star_Studios" target="_blank">Pok&eacute;star Studios in Black 2 and White 2</a>.</div>';
+				buf += '<div class="warning">A Pok&eacute;mon from <a href="https://bulbapedia.bulbagarden.net/wiki/Pok%C3%A9star_Studios" target="_blank"><strong>Pok&eacute;star Studios</strong> in Black 2 and White 2</a>.</div>';
 			} else if (pokemon.isNonstandard === 'Past') {
-				buf += '<div class="warning"><strong>Note:</strong> This Pok&eacute;mon is only usable in past generations and National Dex formats.</div>';
+				buf += '<div class="warning">Only usable in <strong>past generations</strong> and National Dex formats.</div>';
 			} else if (pokemon.isNonstandard === 'LGPE') {
-				buf += '<div class="warning"><strong>Note:</strong> Pok&eacute;mon Let\'s Go, Pikachu! and Let\'s Go, Eevee! only.</div>';
+				buf += '<div class="warning">Pok&eacute;mon <strong>Let\'s Go, Pikachu! and Let\'s Go, Eevee!</strong> only.</div>';
 			} else if (pokemon.isNonstandard === 'Gigantamax') {
-				buf += '<div class="warning"><strong>Note:</strong> This Pok&eacute;mon is not obtainable in the games, even via hacking.</div>';
+				buf += '<div class="warning"><strong>Not obtainable</strong> in the games, even via hacking.</div>';
 			} else if (pokemon.num > 0) {
-				buf += '<div class="warning"><strong>Note:</strong> This Pok&eacute;mon is unreleased.</div>';
+				buf += '<div class="warning"><strong>Unreleased</strong>.</div>';
 			} else {
-				buf += '<div class="warning"><strong>Note:</strong> This is a made-up Pok&eacute;mon by <a href="http://www.smogon.com/cap/" target="_blank">Smogon CAP</a>.</div>';
+				buf += '<div class="warning">A <strong>made-up</strong> Pok&eacute;mon by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
 			}
 		}
 
