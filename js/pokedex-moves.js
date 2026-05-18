@@ -7,10 +7,10 @@ function sourcePad(source) {
 
 var PokedexMovePanel = PokedexResultPanel.extend({
 	events: {
-		'change input[name=dexsource]': 'changeDexSource',
+		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.value;
+		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
 		this.results = null;
 		this.distCacheKey = null;
 		this.renderMoveDex();
@@ -31,19 +31,17 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		var buf = '<div class="pfx-body dexentry">';
 
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
-		if (pokedexShowVersionToggle('move', id)) {
-			buf += '<div class="dexsource-toggle" style="margin:6px 0 10px"><strong>Version:</strong> ';
-			buf += '<label style="margin-right:8px"><input type="radio" name="dexsource" value="digipen" ' + (this.dexMode === 'digipen' ? 'checked' : '') + ' /> DigiPen</label>';
-			buf += '<label><input type="radio" name="dexsource" value="base" ' + (this.dexMode === 'base' ? 'checked' : '') + ' /> Base game</label></div>';
-		}
+		buf += '<div class="dexentry-head">';
+		buf += pokedexDexBaseGameToggleHtml(this, id, 'move');
 		buf += '<h1><a href="/moves/'+id+'" data-target="push" class="subtle">'+move.name+'</a></h1>';
+		buf += '</div>';
 
 		if (move.id === 'magikarpsrevenge') {
 			buf += '<div class="warning">Made for testing; <strong>not a real move</strong>.</div>';
 		} else if (move.isNonstandard) {
 			buf += '<div class="warning">';
 			if (typeof move.isNonstandard === 'string' && move.isNonstandard.startsWith('DigiPen')) {
-				buf += 'A <strong>made-up</strong> move by the DigiPen Pok&eacute;mon Club.';
+				buf += 'A move by the DigiPen Pok&eacute;mon Club.';
 			} else switch (move.isNonstandard) {
 			case 'Past':
 				buf += 'Only available in <strong>past generations</strong>.';
@@ -61,7 +59,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				}
 				break;
 			case 'CAP':
-				buf += 'A <strong>made-up</strong> move by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.';
+				buf += 'A move by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.';
 				break;
 			case 'LGPE':
 				buf += 'Only available in Let\'s Go! Pikachu and Eevee.';
@@ -334,6 +332,10 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			}
 		}
 
+		if (pokedexShowDigiPenDexMetadata(this, 'move')) {
+			buf += pokedexFormatPokemonStyleDexEntryHtml(move.dexEntry);
+		}
+
 		// getting it
 		// warning: excessive trickiness
 		var leftPanel = this.app.panels[this.app.panels.length - 2];
@@ -470,9 +472,13 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		}
 		if (pastGenChanges) buf += '</dl>';
 
-		// distribution
 		buf += '<ul class="utilichart metricchart nokbd">';
 		buf += '</ul>';
+
+		if (pokedexShowDigiPenDexMetadata(this, 'move')) {
+			var moveRow = window.BattleMovedex && BattleMovedex[id];
+			buf += pokedexFormatContributorBlockHtml(move.contributors || (moveRow && moveRow.contributors));
+		}
 
 		buf += '</div>';
 
@@ -581,7 +587,8 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 	renderRow: function(i, offscreen) {
 		var results = this.results;
 		var id = results[i].substr(5);
-		var template = id ? BattlePokedex[id] : undefined;
+		var dex = pokedexModDex(this, 'move');
+		var template = id ? dex.species.get(id) : undefined;
 		// Cosmetic forme stubs (e.g. gastrodoneast) omit abilities; Dex fills them from the base species.
 		if (template && !template.abilities) {
 			template = Dex.species.get(id);
@@ -627,8 +634,20 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				break;
 			}
 			var inner = BattleSearch.renderTaggedPokemonRowInner(template, desc);
-			if (pokedexPanelHighlightsDigipenDistribution(this, 'move') && pokedexPokemonGainedMoveInDigipen(this.id, id)) {
-				return '<span class="pokedex-modified-pokemon-wrap">' + inner + '</span>';
+			var boldGainedMove = pokedexPanelHighlightsDigipenDistribution(this, 'move') && pokedexPokemonGainedMoveInDigipen(this.id, id);
+			var boldDigiPenSpecies = pokedexIsDigiPenExclusive('pokemon', id);
+			if (boldGainedMove || boldDigiPenSpecies) {
+				var tagged = inner.replace(
+					'<span class="col shortpokemonnamecol">',
+					'<span class="col shortpokemonnamecol pokedex-modified-pokemon-name">'
+				);
+				if (tagged === inner) {
+					tagged = inner.replace(
+						'<span class="col pokemonnamecol">',
+						'<span class="col pokemonnamecol pokedex-modified-pokemon-name">'
+					);
+				}
+				return tagged;
 			}
 			return inner;
 		}

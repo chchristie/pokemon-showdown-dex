@@ -4,10 +4,10 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		'input input[name=level]': 'updateLevel',
 		'keyup input[name=level]': 'updateLevel',
 		'change input[name=level]': 'updateLevel',
-		'change input[name=dexsource]': 'changeDexSource',
+		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.value;
+		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
 		this.renderPokemonDex();
 	},
 	initialize: function (id) {
@@ -24,11 +24,9 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		var buf = '<div class="pfx-body dexentry">';
 
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
-		if (pokedexShowVersionToggle('pokemon', id)) {
-			buf += '<div class="dexsource-toggle" style="margin:6px 0 10px"><strong>Version:</strong> ';
-			buf += '<label style="margin-right:8px"><input type="radio" name="dexsource" value="digipen" ' + (this.dexMode === 'digipen' ? 'checked' : '') + ' /> DigiPen</label>';
-			buf += '<label><input type="radio" name="dexsource" value="base" ' + (this.dexMode === 'base' ? 'checked' : '') + ' /> Base game</label></div>';
-		}
+		buf += '<div class="dexentry-head">';
+		buf += pokedexDexBaseGameToggleHtml(this, id, 'pokemon');
+		buf += '<div class="dexentry-title-row">';
 		buf += '<a href="/tiers/'+toID(pokemon.tier)+'" data-target="push" class="tier">'+pokemon.tier+'</a>';
 		buf += '<h1>';
 		if (pokemon.forme) {
@@ -38,6 +36,11 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		}
 		if (pokemon.num > 0) buf += ' <code>#'+pokemon.num+'</code>';
 		buf += '</h1>';
+		buf += '</div>';
+		if (pokedexShowDigiPenDexMetadata(this, 'pokemon') && pokemon.title) {
+			buf += '<p class="dexentry-subtitle">' + Dex.escapeHTML(pokemon.title) + ' Pok&eacute;mon</p>';
+		}
+		buf += '</div>';
 
 		if (pokemon.isNonstandard) {
 			if (id === 'missingno') {
@@ -51,11 +54,11 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			} else if (pokemon.isNonstandard === 'Gigantamax') {
 				buf += '<div class="warning"><strong>Not obtainable</strong> in the games, even via hacking.</div>';
 			} else if (typeof pokemon.isNonstandard === 'string' && pokemon.isNonstandard.startsWith('DigiPen')) {
-				buf += '<div class="warning">A <strong>made-up</strong> Pok&eacute;mon by the DigiPen Pok&eacute;mon Club.</div>';
+				buf += '<div class="warning">A Pok&eacute;mon by the DigiPen Pok&eacute;mon Club.</div>';
 			} else if (pokemon.num > 0) {
 				buf += '<div class="warning"><strong>Unreleased</strong>.</div>';
 			} else {
-				buf += '<div class="warning">A <strong>made-up</strong> Pok&eacute;mon by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
+				buf += '<div class="warning">A Pok&eacute;mon by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
 			}
 		}
 
@@ -84,7 +87,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		buf += '</dl>';
 
 		buf += '<dl class="abilityentry">';
-		buf += '<dt>Abilities:</dt> <dd class="imgentry">';
+		buf += '<dt><br>Abilities:</dt> <dd class="imgentry">';
 		for (var i in pokemon.abilities) {
 			var ability = pokemon.abilities[i];
 			if (!ability) continue;
@@ -235,6 +238,10 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			buf += '<div style="clear:left"></div>';
 		}
 
+		if (pokedexShowDigiPenDexMetadata(this, 'pokemon')) {
+			buf += pokedexFormatPokemonStyleDexEntryHtml(pokemon.dexEntry);
+		}
+
 		// past gens
 		var pastGenChanges = false;
 		for (var genNum = Dex.gen - 1; genNum >= pokemon.gen; genNum--) {
@@ -281,9 +288,9 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 
 		// learnset (preview strip under Moves tab)
 		if (window.BattleLearnsets && BattleLearnsets[id] && BattleLearnsets[id].eventData) {
-			buf += '<ul class="tabbar"><li><button class="button nav-first cur" value="move">Moves</button></li><li><button class="button" value="details">Flavor</button></li><li><button class="button nav-last" value="events">Events</button></li></ul>';
+			buf += '<ul class="tabbar"><li><button class="button nav-first cur" value="move">Moves</button></li><li><button class="button" value="details">Miscellaneous</button></li><li><button class="button nav-last" value="events">Events</button></li></ul>';
 		} else {
-			buf += '<ul class="tabbar"><li><button class="button nav-first cur" value="move">Moves</button></li><li><button class="button nav-last" value="details">Flavor</button></li></ul>';
+			buf += '<ul class="tabbar"><li><button class="button nav-first cur" value="move">Moves</button></li><li><button class="button nav-last" value="details">Miscellaneous</button></li></ul>';
 		}
 		buf += '<ul class="utilichart nokbd">';
 		var builtPreview = pokedexBuildLearnsetEncodedMoves(pokemon);
@@ -404,9 +411,13 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		var pokemon = dex.species.get(this.id);
 		var buf = '';
 
-		// flavor
-		buf += '<li class="resultheader"><h3>Flavor</h3></li>';
-		buf += '<li><dl><dt>Color:</dt><dd>'+pokemon.color+'</dd></dl></li>';
+		// miscellaneous (sprites, color, habitat, DigiPen notes)
+		buf += '<li class="resultheader"><h3>Miscellaneous</h3></li>';
+		buf += '<li><dl class="colentry"><dt>Color:</dt><dd>' + Dex.escapeHTML(String(pokemon.color || '')) + '</dd></dl>';
+		if (pokedexShowDigiPenDexMetadata(this, 'pokemon') && pokemon.habitat && String(pokemon.habitat).trim()) {
+			buf += '<dl class="colentry"><dt>Habitat:</dt><dd>' + Dex.escapeHTML(String(pokemon.habitat).trim()) + '</dd></dl>';
+		}
+		buf += '<div style="clear:left"></div></li>';
 
 		// animated gen 6
 		if (pokemon.num > 0 && pokemon.gen < 10 && this.id !== 'missingno' && this.id !== 'pichuspikyeared' && !pokemon.digipenSprite) {
@@ -476,6 +487,13 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			buf += '<li class="resultheader"><h3>Gen 1 Sprites</h3></li>';
 			buf += '<li class="content"><table class="sprites"><tr><td><img src="' + Dex.resourcePrefix + 'sprites/gen1/' + pokemon.spriteid + '.png" /></td>';
 			buf += '<table class="sprites"><tr><td><img src="' + Dex.resourcePrefix + 'sprites/gen1-back/' + pokemon.spriteid + '.png" /></td>';
+		}
+
+		if (pokedexShowDigiPenDexMetadata(this, 'pokemon')) {
+			var extraNotes = pokedexFormatNotesSectionHtml(pokemon.notes);
+			if (extraNotes) buf += '<li class="content">' + extraNotes + '</li>';
+			var extraAck = pokedexFormatAcknowledgementsSectionHtml(pokemon.artSource, pokemon.contributors);
+			if (extraAck) buf += '<li class="content">' + extraAck + '</li>';
 		}
 
 		this.$('.utilichart').html(buf);

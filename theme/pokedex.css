@@ -54,6 +54,9 @@
 	text-align: left;
 	padding: 18px 12px 6px;
 }
+.dexentry .warning {
+	clear: both;
+}
 .dexentry h1 code {
 	font-size: 11pt;
 	font-weight: normal;
@@ -61,10 +64,32 @@
 	margin-left: 5px;
 	color: #999999;
 }
-.dexentry .tier {
+.dexentry-head {
+	clear: both;
+	overflow: hidden;
+	padding: 0 10px 0;
+	text-align: left;
+}
+.dexentry-basegame-row {
+	font-size: 8pt;
+	margin: 6px 0 4px;
+	line-height: 1.35;
+}
+.dexentry-basegame-label {
+	cursor: pointer;
+	color: #555555;
+}
+.dexentry-title-row {
+	overflow: hidden;
+}
+.dexentry-head h1 {
+	margin: 0;
+	padding: 8px 0 6px 0;
+}
+.dexentry .dexentry-title-row .tier {
 	float: right;
 	padding: 2px 4px;
-	margin: 22px 10px 0 0;
+	margin: 10px 0 0 10px;
 	border-radius: 4px;
 	font-size: 10pt;
 	border: 1px solid #aaa;
@@ -500,9 +525,34 @@ a.subtle:hover {
 .pokedex-modified-pokemon .shortpokemonnamecol {
 	font-weight: bold;
 }
-.pokedex-modified-pokemon-wrap .shortpokemonnamecol {
+.dexentry .utilichart .pokedex-modified-pokemon-name {
 	font-weight: bold;
 }
-.pokedex-modified-pokemon-wrap .pokemonnamecol {
-	font-weight: bold;
+
+/* DigiPen dex metadata (category line, notes in flavor tab) */
+.dexentry-subtitle {
+	margin: 0.15em 0 0.65em;
+	font-size: 1.05em;
+	font-style: italic;
+	opacity: 0.92;
+}
+.dexentry-head .dexentry-subtitle {
+	padding-left: 0;
+	padding-right: 0;
+}
+.dexentry .utilichart .content h3 {
+	margin-top: 0.5em;
+}
+.dexentry .utilichart .content ul {
+	margin: 0.35em 0 0.5em 1.25em;
+}
+.dexentry-notes-text {
+	text-align: left;
+	white-space: pre-wrap;
+	margin: 0.35em 0 0.65em;
+	padding: 0;
+}
+.dexentry .dexentry-contributor-block {
+	margin-top: 1.25em;
+	clear: left;
 }

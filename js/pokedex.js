@@ -29,6 +29,96 @@ function pokedexModDex(panel, kind) {
 	return Dex.mod('gen9digipen');
 }
 
+/** HTML `name` on the base-game checkbox — unique per panel. */
+function pokedexDexSourceRadioName(panel) {
+	return 'dexsource-' + (panel && panel.cid ? panel.cid : 'anon');
+}
+
+/** Version control: one checkbox, checked = vanilla dex data */
+function pokedexDexBaseGameToggleHtml(panel, id, kind) {
+	if (!pokedexShowVersionToggle(kind, id)) return '';
+	var name = pokedexDexSourceRadioName(panel);
+	var checked = panel.dexMode === 'base' ? ' checked' : '';
+	return '<div class="dexsource-toggle dexentry-basegame-row"><label class="dexentry-basegame-label">' +
+		'<input type="checkbox" name="' + name + '" class="dexentry-basegame-cb"' + checked + ' /> Show base game data</label></div>';
+}
+
+/** When to show DigiPen dex metadata: DigiPen version, or always for DigiPen-exclusive entries. */
+function pokedexShowDigiPenDexMetadata(panel, kind) {
+	return pokedexIsDigiPenExclusive(kind, panel.id) || panel.dexMode === 'digipen';
+}
+
+/**
+ * Comma-separated escaped contributor names. Supports string[]; objects with `name` and optional `href` for future internal dex links.
+ */
+function pokedexFormatContributorsHtml(contributors) {
+	if (!contributors || !contributors.length) return '';
+	var parts = [];
+	for (var i = 0; i < contributors.length; i++) {
+		var c = contributors[i];
+		if (typeof c === 'string') {
+			parts.push(Dex.escapeHTML(c));
+		} else if (c && typeof c === 'object' && c.name) {
+			var nameEsc = Dex.escapeHTML(String(c.name));
+			if (c.href) {
+				parts.push('<a href="' + Dex.escapeHTML(String(c.href)) + '" rel="noopener noreferrer" target="_blank">' + nameEsc + '</a>');
+			} else {
+				parts.push(nameEsc);
+			}
+		}
+	}
+	return parts.join(', ');
+}
+
+function pokedexFormatContributorBlockHtml(contributors) {
+	var inner = pokedexFormatContributorsHtml(contributors);
+	if (!inner) return '';
+	return '<div class="dexentry-contributor-block"><h3>Acknowledgements</h3><p>Contributor: ' + inner + '</p></div>';
+}
+
+/** Same Pokédex entry layout as the Pokémon species page (`<dl>` + dt/dd). */
+function pokedexFormatPokemonStyleDexEntryHtml(text) {
+	if (!text || !String(text).trim()) return '';
+	return '<dl style="clear:left"><dt>Pok&eacute;dex entry:</dt> <dd>' + Dex.escapeHTML(String(text).trim()) + '</dd></dl>';
+}
+function pokedexFormatArtCreditHtml(artSource) {
+	if (!artSource) return '';
+	var artist = artSource.artist;
+	var url = artSource.url;
+	if (!artist && !url) return '';
+	var line = 'Based on art by ';
+	if (url && artist) {
+		line += '<a href="' + Dex.escapeHTML(String(url)) + '" rel="noopener noreferrer" target="_blank">' + Dex.escapeHTML(String(artist)) + '</a>';
+	} else if (url) {
+		line += '<a href="' + Dex.escapeHTML(String(url)) + '" rel="noopener noreferrer" target="_blank">Art</a>';
+	} else {
+		line += Dex.escapeHTML(String(artist));
+	}
+	return line;
+}
+
+function pokedexFormatNotesSectionHtml(notes) {
+	if (notes == null || notes === '') return '';
+	var text = '';
+	if (typeof notes === 'string') {
+		text = notes.trim();
+	} else if (Array.isArray(notes) && notes.length) {
+		text = notes.filter(Boolean).map(function (x) { return String(x).trim(); }).join('\n').trim();
+	}
+	if (!text) return '';
+	return '<h3>Notes</h3><p class="dexentry-notes-text">' + Dex.escapeHTML(text) + '</p>';
+}
+
+function pokedexFormatAcknowledgementsSectionHtml(artSource, contributors) {
+	var artLine = pokedexFormatArtCreditHtml(artSource);
+	var contInner = pokedexFormatContributorsHtml(contributors);
+	var buf = '';
+	if (artLine) buf += '<p>' + artLine + '</p>';
+	if (contInner) buf += '<p>Contributor: ' + contInner + '</p>';
+	if (!buf) return '';
+	return '<h3>Acknowledgements</h3>' + buf;
+}
+
 /** Merged BattleLearnsets entry (species id, base species, changesFrom). */
 function pokedexResolveLearnset(id, pokemon) {
 	var learnset = BattleLearnsets[id] && BattleLearnsets[id].learnset;
@@ -369,10 +459,10 @@ var PokedexResultPanel = Panels.Panel.extend({
 
 var PokedexItemPanel = PokedexResultPanel.extend({
 	events: {
-		'change input[name=dexsource]': 'changeDexSource',
+		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.value;
+		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
 		this.renderItemDex();
 	},
 	initialize: function (id) {
@@ -392,14 +482,12 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 
 		var buf = '<div class="pfx-body dexentry">';
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
-		if (pokedexShowVersionToggle('item', id)) {
-			buf += '<div class="dexsource-toggle" style="margin:6px 0 10px"><strong>Version:</strong> ';
-			buf += '<label style="margin-right:8px"><input type="radio" name="dexsource" value="digipen" ' + (this.dexMode === 'digipen' ? 'checked' : '') + ' /> DigiPen</label>';
-			buf += '<label><input type="radio" name="dexsource" value="base" ' + (this.dexMode === 'base' ? 'checked' : '') + ' /> Base game</label></div>';
-		}
+		buf += '<div class="dexentry-head">';
+		buf += pokedexDexBaseGameToggleHtml(this, id, 'item');
 		buf += '<h1><span class="itemicon" style="'+Dex.getItemIcon(item)+'"></span> <a href="/items/'+id+'" data-target="push" class="subtle">'+item.name+'</a></h1>';
+		buf += '</div>';
 		if (typeof item.isNonstandard === 'string' && item.isNonstandard.startsWith('DigiPen')) {
-			buf += '<div class="warning">A <strong>made-up</strong> item by the DigiPen Pok&eacute;mon Club.</div>';
+			buf += '<div class="warning">An item by the DigiPen Pok&eacute;mon Club.</div>';
 		}
 		buf += '<p>'+Dex.escapeHTML(item.desc||item.shortDesc)+'</p>';
 
@@ -423,6 +511,12 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 		}
 		if (pastGenChanges) buf += '</dl>';
 
+		if (pokedexShowDigiPenDexMetadata(this, 'item')) {
+			var itemRow = window.BattleItems && BattleItems[id];
+			var contributors = item.contributors || (itemRow && itemRow.contributors);
+			buf += pokedexFormatContributorBlockHtml(contributors);
+		}
+
 		buf += '</div>';
 
 		this.html(buf);
@@ -430,10 +524,10 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 });
 var PokedexAbilityPanel = PokedexResultPanel.extend({
 	events: {
-		'change input[name=dexsource]': 'changeDexSource',
+		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.value;
+		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
 		this.renderAbilityDex();
 	},
 	initialize: function (id) {
@@ -449,18 +543,16 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 
 		var buf = '<div class="pfx-body dexentry">';
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
-		if (pokedexShowVersionToggle('ability', id)) {
-			buf += '<div class="dexsource-toggle" style="margin:6px 0 10px"><strong>Version:</strong> ';
-			buf += '<label style="margin-right:8px"><input type="radio" name="dexsource" value="digipen" ' + (this.dexMode === 'digipen' ? 'checked' : '') + ' /> DigiPen</label>';
-			buf += '<label><input type="radio" name="dexsource" value="base" ' + (this.dexMode === 'base' ? 'checked' : '') + ' /> Base game</label></div>';
-		}
+		buf += '<div class="dexentry-head">';
+		buf += pokedexDexBaseGameToggleHtml(this, id, 'ability');
 		buf += '<h1><a href="/abilities/'+id+'" data-target="push" class="subtle">'+ability.name+'</a></h1>';
+		buf += '</div>';
 
 		if (ability.isNonstandard && ability.id !== 'noability') {
 			if (typeof ability.isNonstandard === 'string' && ability.isNonstandard.startsWith('DigiPen')) {
-				buf += '<div class="warning">A <strong>made-up</strong> ability by the DigiPen Pok&eacute;mon Club.</div>';
+				buf += '<div class="warning">An ability by the DigiPen Pok&eacute;mon Club.</div>';
 			} else {
-				buf += '<div class="warning">A <strong>made-up</strong> ability by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
+				buf += '<div class="warning">An ability by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
 			}
 		}
 
@@ -504,17 +596,16 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		var buf = '';
 		var highlightDigiPen = pokedexPanelHighlightsDigipenDistribution(this, 'ability');
 		for (var pokemonid in BattlePokedex) {
-			var template = BattlePokedex[pokemonid];
-			if (!template.abilities) continue;
-			if (template.isNonstandard && !ability.isNonstandard) {
-				var ns = template.isNonstandard;
+			var sp = dex.species.get(pokemonid);
+			if (!sp.abilities) continue;
+			if (sp.isNonstandard && !ability.isNonstandard) {
+				var ns = sp.isNonstandard;
 				var allowDigiPenMon = highlightDigiPen && typeof ns === 'string' && ns.startsWith('DigiPen');
 				if (!allowDigiPenMon) continue;
 			}
-			var sp = dex.species.get(pokemonid);
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
-				var row = BattleSearch.renderPokemonRow(template);
-				if (highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) {
+				var row = BattleSearch.renderPokemonRow(sp);
+				if ((highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) || pokedexIsDigiPenExclusive('pokemon', pokemonid)) {
 					row = pokedexWrapPokemonRowIfGained(row, true);
 				}
 				buf += row;
@@ -523,19 +614,18 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 
 		var hasNonstandard = false;
 		for (var pokemonid in BattlePokedex) {
-			var template = BattlePokedex[pokemonid];
-			if (!template.abilities) continue;
-			if (!(template.isNonstandard && !ability.isNonstandard)) continue;
-			var ns2 = template.isNonstandard;
-			if (highlightDigiPen && typeof ns2 === 'string' && ns2.startsWith('DigiPen')) continue;
 			var sp = dex.species.get(pokemonid);
+			if (!sp.abilities) continue;
+			if (!(sp.isNonstandard && !ability.isNonstandard)) continue;
+			var ns2 = sp.isNonstandard;
+			if (highlightDigiPen && typeof ns2 === 'string' && ns2.startsWith('DigiPen')) continue;
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
 				if (!hasNonstandard) {
 					buf += '<li class="resultheader"><h3>Unavailable Pok&eacute;mon with this ability</h3></li>';
 					hasNonstandard = true;
 				}
-				var row2 = BattleSearch.renderPokemonRow(template);
-				if (highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) {
+				var row2 = BattleSearch.renderPokemonRow(sp);
+				if ((highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) || pokedexIsDigiPenExclusive('pokemon', pokemonid)) {
 					row2 = pokedexWrapPokemonRowIfGained(row2, true);
 				}
 				buf += row2;
@@ -543,6 +633,14 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		}
 
 		this.$('.utilichart').html(buf);
+
+		this.$('.dexentry .dexentry-contributor-block').remove();
+		if (pokedexShowDigiPenDexMetadata(this, 'ability')) {
+			var abRow = window.BattleAbilities && BattleAbilities[this.id];
+			var contributors = ability.contributors || (abRow && abRow.contributors);
+			var foot = pokedexFormatContributorBlockHtml(contributors);
+			if (foot) this.$('.dexentry').append(foot);
+		}
 	}
 });
 var PokedexTypePanel = PokedexResultPanel.extend({
