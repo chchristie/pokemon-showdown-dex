@@ -6,22 +6,45 @@ function sourcePad(source) {
 }
 
 var PokedexMovePanel = PokedexResultPanel.extend({
-	initialize: function(id) {
-		id = toID(id);
-		var move = Dex.moves.get(id);
-		this.id = id;
+	events: {
+		'change input[name=dexsource]': 'changeDexSource',
+	},
+	changeDexSource: function (e) {
+		this.dexMode = e.currentTarget.value;
+		this.results = null;
+		this.distCacheKey = null;
+		this.renderMoveDex();
+	},
+	initialize: function (id) {
+		this.id = toID(id);
+		if (!this.dexMode) this.dexMode = 'digipen';
+		this.results = null;
+		this.distCacheKey = null;
+		this.renderMoveDex();
+	},
+	renderMoveDex: function () {
+		var id = this.id;
+		var dex = pokedexModDex(this, 'move');
+		var move = dex.moves.get(id);
 		this.shortTitle = move.name;
 
 		var buf = '<div class="pfx-body dexentry">';
 
 		buf += '<a href="/" class="pfx-backbutton" data-target="back"><i class="fa fa-chevron-left"></i> Pok&eacute;dex</a>';
+		if (pokedexShowVersionToggle('move', id)) {
+			buf += '<div class="dexsource-toggle" style="margin:6px 0 10px"><strong>Version:</strong> ';
+			buf += '<label style="margin-right:8px"><input type="radio" name="dexsource" value="digipen" ' + (this.dexMode === 'digipen' ? 'checked' : '') + ' /> DigiPen</label>';
+			buf += '<label><input type="radio" name="dexsource" value="base" ' + (this.dexMode === 'base' ? 'checked' : '') + ' /> Base game</label></div>';
+		}
 		buf += '<h1><a href="/moves/'+id+'" data-target="push" class="subtle">'+move.name+'</a></h1>';
 
 		if (move.id === 'magikarpsrevenge') {
 			buf += '<div class="warning">Made for testing; <strong>not a real move</strong>.</div>';
 		} else if (move.isNonstandard) {
 			buf += '<div class="warning">';
-			switch (move.isNonstandard) {
+			if (typeof move.isNonstandard === 'string' && move.isNonstandard.startsWith('DigiPen')) {
+				buf += 'A <strong>made-up</strong> move by the DigiPen Pok&eacute;mon Club.';
+			} else switch (move.isNonstandard) {
 			case 'Past':
 				buf += 'Only available in <strong>past generations</strong>.';
 				break;
@@ -222,7 +245,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				buf += '<p><strong>Z-' + move.name + '</strong>: +1 Atk if the user is a ghost, or fully heals the user otherwise, then uses ' + move.name + '</p>';
 			}
 			if (id in zMoveVersionTable) {
-				var zMove = Dex.moves.get(zMoveVersionTable[id]);
+				var zMove = dex.moves.get(zMoveVersionTable[id]);
 				buf += '<p><strong><a href="/moves/' + zMove.id + '" data-target="push">' + zMove.name + '</a></strong>: ';
 				if (zMove.basePower) {
 					buf += '' + zMove.basePower + ' base power, ' + zMove.category + '</p>';
@@ -232,7 +255,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				buf += '</p>';
 			}
 			if ((id + '2') in zMoveVersionTable) {
-				var zMove = Dex.moves.get(zMoveVersionTable[id + '2']);
+				var zMove = dex.moves.get(zMoveVersionTable[id + '2']);
 				buf += '<p><strong><a href="/moves/' + zMove.id + '" data-target="push">' + zMove.name + '</a></strong>: ';
 				if (zMove.basePower) {
 					buf += '' + zMove.basePower + ' base power, ' + zMove.category + '</p>';
@@ -300,7 +323,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			}
 			if (move.type in gmaxMoveTable && move.category !== 'Status') {
 				for (let i = 0; i < gmaxMoveTable[move.type].length; i++) {
-					var gmaxMove = Dex.moves.get('gmax' + gmaxMoveTable[move.type][i]);
+					var gmaxMove = dex.moves.get('gmax' + gmaxMoveTable[move.type][i]);
 					buf += '<p>Becomes <strong><a href="/moves/' + gmaxMove.id + '" data-target="push">' + gmaxMove.name + '</a></strong> ';
 					buf += 'if used by <strong><a href="/pokemon/' + gmaxMove.isMax + 'gmax" data-target="push">' + gmaxMove.isMax + '-Gmax</a></strong>';
 					if (gmaxMove.isMax === 'Toxtricity') {
@@ -459,13 +482,23 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 	},
 	getDistribution: function() {
 		var moveid = this.id;
-		if (this.results) return this.results;
+		var cacheKey = moveid + '|' + (this.dexMode || '');
+		if (this.distCacheKey === cacheKey && this.results) return this.results;
 		var results = [];
+		var digiView = this.dexMode === 'digipen' || pokedexIsDigiPenExclusive('move', this.id);
+		var baseGameView = this.dexMode === 'base' && !pokedexIsDigiPenExclusive('move', this.id);
+		var additions = window.BattleLearnsetsDigiPenAdditions;
 		for (var pokemonid in BattleLearnsets) {
 			if (!BattlePokedex[pokemonid] || !BattleLearnsets[pokemonid]) continue;
-			if (BattlePokedex[pokemonid].isNonstandard || !BattleLearnsets[pokemonid].learnset) continue;
+			if (BattlePokedex[pokemonid].isNonstandard) {
+				var ns = BattlePokedex[pokemonid].isNonstandard;
+				var allowDigiPenMon = digiView && typeof ns === 'string' && ns.startsWith('DigiPen');
+				if (!allowDigiPenMon) continue;
+			}
+			if (!BattleLearnsets[pokemonid].learnset) continue;
 			var sources = BattleLearnsets[pokemonid].learnset[moveid];
 			if (!sources) continue;
+			if (baseGameView && additions && pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid)) continue;
 			if (typeof sources === 'string') sources = [sources];
 			var atLeastOne = false;
 			for (var i=0, len=sources.length, gen=''+Dex.gen; i<len; i++) {
@@ -509,6 +542,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			}
 			last = results[i].charAt(0);
 		}
+		this.distCacheKey = cacheKey;
 		return this.results = results;
 	},
 	renderDistribution: function() {
@@ -548,6 +582,10 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		var results = this.results;
 		var id = results[i].substr(5);
 		var template = id ? BattlePokedex[id] : undefined;
+		// Cosmetic forme stubs (e.g. gastrodoneast) omit abilities; Dex fills them from the base species.
+		if (template && !template.abilities) {
+			template = Dex.species.get(id);
+		}
 		if (!template) {
 			switch (results[i].charAt(0)) {
 			case 'A': // level-up move
@@ -588,7 +626,11 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				desc = '...';
 				break;
 			}
-			return BattleSearch.renderTaggedPokemonRowInner(template, desc);
+			var inner = BattleSearch.renderTaggedPokemonRowInner(template, desc);
+			if (pokedexPanelHighlightsDigipenDistribution(this, 'move') && pokedexPokemonGainedMoveInDigipen(this.id, id)) {
+				return '<span class="pokedex-modified-pokemon-wrap">' + inner + '</span>';
+			}
+			return inner;
 		}
 	},
 	handleScroll: function() {

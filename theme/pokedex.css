@@ -491,3 +491,18 @@ a.subtle:hover {
 .tabbar .button.nav-last {
 	border-top-right-radius: 5px;
 }
+
+/* DigiPen dex: bold modified moves / mons that gained move or ability only in mod */
+.pokedex-modified-move .shortmovenamecol {
+	font-weight: bold;
+}
+.pokedex-modified-pokemon .pokemonnamecol,
+.pokedex-modified-pokemon .shortpokemonnamecol {
+	font-weight: bold;
+}
+.pokedex-modified-pokemon-wrap .shortpokemonnamecol {
+	font-weight: bold;
+}
+.pokedex-modified-pokemon-wrap .pokemonnamecol {
+	font-weight: bold;
+}

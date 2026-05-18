@@ -47,13 +47,15 @@ var PokedexSearchPanel = Panels.Panel.extend({
 				search.updateScroll();
 			});
 			if (fragment === 'pokemon/') {
-				search.setType('pokemon');
+				search.setType('pokemon', 'digipenou');
 				$searchbox.attr('placeholder', 'Search pokemon OR filter by type, move, ability, egg group');
 				this.$('.buttonbar').remove();
 			} else if (fragment === 'moves/') {
-				search.setType('move');
+				search.setType('move', 'digipenou');
 				$searchbox.attr('placeholder', 'Search moves OR filter by type, category, pokemon');
 				this.$('.buttonbar').remove();
+			} else {
+				search.engine.dex = Dex.mod('gen9digipen');
 			}
 			this.search.externalFilter = true;
 		} else {
@@ -88,11 +90,12 @@ var PokedexSearchPanel = Panels.Panel.extend({
 			return;
 		}
 		if (this.search.filters) {
+			var fdex = this.search.engine.dex || Dex;
 			for (var i = 0; i < this.search.filters.length; i++) {
 				var filter = this.search.filters[i];
 				var text = filter[1];
-				if (filter[0] === 'move') text = Dex.moves.get(text).name;
-				if (filter[0] === 'pokemon') text = Dex.species.get(text).name;
+				if (filter[0] === 'move') text = fdex.moves.get(text).name;
+				if (filter[0] === 'pokemon') text = fdex.species.get(text).name;
 				buf += '<button class="filter" value="' + Dex.escapeHTML(filter.join(':')) + '">' + text + ' <i class="fa fa-times-circle"></i></button> ';
 			}
 		}
