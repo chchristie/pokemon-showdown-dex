@@ -94,7 +94,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 
 			if (i !== '0') buf += ' | ';
 			var aid = toID(pokemon.abilities[i]);
-			var abMod = BattleAbilities[aid] && BattleAbilities[aid].modified === 'DigiPen';
+			var abMod = BattleAbilities[aid] && (BattleAbilities[aid].modified === 'DigiPen' || BattleAbilities[aid].isNonstandard === 'DigiPen');
 			if (i === 'H') {
 				buf += (abMod ? '<strong>' : '') + '<a href="/abilities/' + aid + '" data-target="push"><em>' + pokemon.abilities[i] + '</em></a>' + (abMod ? '</strong>' : '');
 			} else {
