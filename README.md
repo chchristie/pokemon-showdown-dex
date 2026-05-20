@@ -38,7 +38,7 @@ Important features include:
 Testing
 ------------------------------------------------------------------------
 
-You can make and test changes simply by opening `testclient.html`.
+You can test changes by running `npx serve -s -p 8082` in a terminal at the root of this repo, then going to localhost:8082 in a browser.
 
 License
 ------------------------------------------------------------------------

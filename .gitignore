@@ -3,3 +3,5 @@
 /config/config.js
 node_modules
 .DS_Store
+/localhost.pem
+/localhost-key.pem

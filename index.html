@@ -2,19 +2,23 @@
 <html><head>
 
 	<!--
-	  Local client: run `npx serve -p 8081` from the pokemon-showdown-client repo root.
+	  Local dev (from this repo):
+	    1. npx serve -p 8081  (pokemon-showdown-client repo)
+	    2. npx serve -s -p 8082  (this repo)
+	    3. optional HTTPS for /dt links in Showdown chats: local-ssl-proxy --source 8083 --target 8082
 	-->
 	<meta charset="utf-8" />
+	<base href="/">
 
 	<title>Pok&eacute;dex - Pok&eacute;mon Showdown</title>
 
 	<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=IE8" />
 	<link rel="stylesheet" href="https://play.pokemonshowdown.com/style/font-awesome.css" />
-	<link rel="stylesheet" href="theme/panels.css?b1" />
-	<link rel="stylesheet" href="theme/main.css?b1" />
+	<link rel="stylesheet" href="/theme/panels.css?b1" />
+	<link rel="stylesheet" href="/theme/main.css?b1" />
 	<meta name="viewport" content="width=device-width,initial-scale=1">
 	<link rel="stylesheet" href="https://play.pokemonshowdown.com/style/utilichart.css?b359" />
-	<link rel="stylesheet" href="theme/pokedex.css?b359" />
+	<link rel="stylesheet" href="/theme/pokedex.css?b359" />
 
 	<!-- Workarounds for IE bugs to display trees correctly. -->
 	<!--[if lte IE 6]><style> li.tree { height: 1px; } </style><![endif]-->
@@ -25,7 +29,7 @@
 	<div class="pfx-topbar">
 		<div class="header">
 			<ul class="nav">
-				<li><a class="button nav-first"><img src="images/pokemonshowdownbeta.png" alt="Pok&eacute;mon Showdown! (beta)" /> PSdex testclient</a></li>
+				<li><a class="button nav-first"><img src="/images/pokemonshowdownbeta.png" alt="Pok&eacute;mon Showdown! (beta)" /> PSdex testclient</a></li>
 				<li><a class="button nav-last" href="https://github.com/Zarel/Pokemon-Showdown-Dex">GitHub</a></li>
 			</ul>
 			<div style="clear:both"></div>
@@ -39,10 +43,10 @@
 			Loading...
 		</p>
 	</div></div>
-	<script src="js/lib/jquery-1.12.4.min.js"></script>
-	<script src="js/lib/lodash.min.js"></script>
-	<script src="js/lib/backbone-min.js"></script>
-	<script src="js/panels.js"></script>
+	<script src="/js/lib/jquery-1.12.4.min.js"></script>
+	<script src="/js/lib/lodash.min.js"></script>
+	<script src="/js/lib/backbone-min.js"></script>
+	<script src="/js/panels.js"></script>
 
 	<script src="http://localhost:8081/config/config.js?v0.9xy31"></script>
 	<script src="http://localhost:8081/play.pokemonshowdown.com/js/battledata.js?v0.9xy31"></script>
@@ -57,10 +61,10 @@
 	<script src="http://localhost:8081/play.pokemonshowdown.com/data/aliases.js?v0.9xy31"></script>
 	<script src="http://localhost:8081/play.pokemonshowdown.com/js/battle-dex-search.js?b359"></script>
 	<script src="http://localhost:8081/play.pokemonshowdown.com/js/search.js?b359"></script>
-	<script src="js/pokedex.js?b359"></script>
-	<script src="js/pokedex-pokemon.js?b359"></script>
-	<script src="js/pokedex-moves.js?b359"></script>
-	<script src="js/pokedex-search.js?b359"></script>
-	<script src="js/router.js?b359"></script>
+	<script src="/js/pokedex.js?b359"></script>
+	<script src="/js/pokedex-pokemon.js?b359"></script>
+	<script src="/js/pokedex-moves.js?b359"></script>
+	<script src="/js/pokedex-search.js?b359"></script>
+	<script src="/js/router.js?b359"></script>
 
 </body></html>
