@@ -490,6 +490,8 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 			buf += '<div class="warning">An item by the DigiPen Pok&eacute;mon Club.</div>';
 		}
 		buf += '<p>'+Dex.escapeHTML(item.desc||item.shortDesc)+'</p>';
+		console.log(item.dexEntry);
+		buf += pokedexFormatPokemonStyleDexEntryHtml(item.dexEntry);
 
 		// past gens
 		var pastGenChanges = false;
