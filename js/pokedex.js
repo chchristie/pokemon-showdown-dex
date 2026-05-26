@@ -252,7 +252,7 @@ function pokedexBuildLearnsetEncodedMoves(pokemon) {
 	var mostRecentGen = Dex.gen;
 	var pastGenPoke = pokemon;
 	for (; mostRecentGen > 7; mostRecentGen--) {
-		if (pastGenPoke.isNonstandard !== 'Past') break;
+		if (!pastGenPoke.isNonstandard?.includes('Past')) break;
 		pastGenPoke = Dex.forGen(mostRecentGen - 1).species.get(pastGenPoke.id);
 	}
 	mostRecentGen = '' + mostRecentGen;
@@ -602,7 +602,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 			if (!sp.abilities) continue;
 			if (sp.isNonstandard && !ability.isNonstandard) {
 				var ns = sp.isNonstandard;
-				var allowDigiPenMon = highlightDigiPen && typeof ns === 'string' && ns.startsWith('DigiPen');
+				var allowDigiPenMon = highlightDigiPen && typeof ns === 'string' && ns === 'DigiPen';
 				if (!allowDigiPenMon) continue;
 			}
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
@@ -620,7 +620,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 			if (!sp.abilities) continue;
 			if (!(sp.isNonstandard && !ability.isNonstandard)) continue;
 			var ns2 = sp.isNonstandard;
-			if (highlightDigiPen && typeof ns2 === 'string' && ns2.startsWith('DigiPen')) continue;
+			if (highlightDigiPen && typeof ns2 === 'string' && ns2 === 'DigiPen') continue;
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
 				if (!hasNonstandard) {
 					buf += '<li class="resultheader"><h3>Unavailable Pok&eacute;mon with this ability</h3></li>';

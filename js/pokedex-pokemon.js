@@ -53,8 +53,10 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 				buf += '<div class="warning">Pok&eacute;mon <strong>Let\'s Go, Pikachu! and Let\'s Go, Eevee!</strong> only.</div>';
 			} else if (pokemon.isNonstandard === 'Gigantamax') {
 				buf += '<div class="warning"><strong>Not obtainable</strong> in the games, even via hacking.</div>';
-			} else if (typeof pokemon.isNonstandard === 'string' && pokemon.isNonstandard.startsWith('DigiPen')) {
+			} else if (pokemon.isNonstandard === 'DigiPen') {
 				buf += '<div class="warning">A Pok&eacute;mon by the DigiPen Pok&eacute;mon Club.</div>';
+			} else if (pokemon.isNonstandard === 'DigiPen Past' || pokemon.isNonstandard === 'DigiPen Future') {
+				buf += '<div class="warning">A Pok&eacute;mon by the DigiPen Pok&eacute;mon Club. Only usable in DigiPen National Dex formats.</div>';
 			} else if (pokemon.num > 0) {
 				buf += '<div class="warning"><strong>Unreleased</strong>.</div>';
 			} else {
