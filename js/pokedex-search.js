@@ -47,11 +47,11 @@ var PokedexSearchPanel = Panels.Panel.extend({
 				search.updateScroll();
 			});
 			if (fragment === 'pokemon/') {
-				search.setType('pokemon', 'digipenou');
+				search.setType('pokemon', 'digipendexnatdex');
 				$searchbox.attr('placeholder', 'Search pokemon OR filter by type, move, ability, egg group');
 				this.$('.buttonbar').remove();
 			} else if (fragment === 'moves/') {
-				search.setType('move', 'digipenou');
+				search.setType('move', 'digipendexnatdex');
 				$searchbox.attr('placeholder', 'Search moves OR filter by type, category, pokemon');
 				this.$('.buttonbar').remove();
 			} else {
