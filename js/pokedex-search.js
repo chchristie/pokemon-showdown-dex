@@ -21,6 +21,8 @@ var PokedexSearchPanel = Panels.Panel.extend({
 		var questionIndex = fragment.indexOf('?');
 		if (fragment === 'moves') fragment = 'moves/';
 		if (fragment === 'pokemon') fragment = 'pokemon/';
+		if (fragment === 'abilities') fragment = 'abilities/';
+		if (fragment === 'items') fragment = 'items/';
 		if (questionIndex >= 0) fragment = fragment.slice(0, questionIndex);
 		var buf = '<div class="pfx-body"><form class="pokedex">';
 		var $oldSearchbox = this.$('.searchbox');
@@ -29,7 +31,9 @@ var PokedexSearchPanel = Panels.Panel.extend({
 		buf += '<h1><a href="/" data-target="replace">Pok&eacute;dex</a></h1>';
 		buf += '<ul class="tabbar centered" style="margin-bottom: 18px"><li><button class="button nav-first' + (fragment === '' ? ' cur' : '') + '" value="">Search</button></li>';
 		buf += '<li><button class="button' + (fragment === 'pokemon/' ? ' cur' : '') + '" value="pokemon/">Pok&eacute;mon</button></li>';
-		buf += '<li><button class="button nav-last' + (fragment === 'moves/' ? ' cur' : '') + '" value="moves/">Moves</button></li></ul>';
+		buf += '<li><button class="button' + (fragment === 'moves/' ? ' cur' : '') + '" value="moves/">Moves</button></li>';
+		buf += '<li><button class="button' + (fragment === 'abilities/' ? ' cur' : '') + '" value="abilities/">Abilities</button></li>';
+		buf += '<li><button class="button nav-last' + (fragment === 'items/' ? ' cur' : '') + '" value="items/">Items</button></li></ul>';
 		buf += '<div class="searchboxwrapper"><input class="textbox searchbox" type="search" name="q" value="' + Dex.escapeHTML($oldSearchbox.val() || '') + '" autocomplete="off" placeholder="Search Pok&eacute;mon, moves, abilities, items, types, or more" /></div>';
 		if (fragment === '') {
 			buf += '<p class="buttonbar"><button class="button"><i class="fa fa-search" aria-hidden="true"></i> <strong>Pok&eacute;dex Search</strong></button> <button name="lucky" class="button">I\'m Feeling Lucky</button></p>';
@@ -53,6 +57,14 @@ var PokedexSearchPanel = Panels.Panel.extend({
 			} else if (fragment === 'moves/') {
 				search.setType('move', 'digipendexnatdex');
 				$searchbox.attr('placeholder', 'Search moves OR filter by type, category, pokemon');
+				this.$('.buttonbar').remove();
+			} else if (fragment === 'abilities/') {
+				search.setType('ability', 'digipendexnatdex');
+				$searchbox.attr('placeholder', 'Search abilities OR filter by pokemon');
+				this.$('.buttonbar').remove();
+			} else if (fragment === 'items/') {
+				search.setType('item', 'digipendexnatdex');
+				$searchbox.attr('placeholder', 'Search items OR filter by pokemon');
 				this.$('.buttonbar').remove();
 			} else {
 				search.engine.dex = Dex.mod('gen9digipen');
@@ -150,7 +162,7 @@ var PokedexSearchPanel = Panels.Panel.extend({
 			}
 			if (this.activeLink) {
 				var path = this.activeLink.pathname.substr(1);
-				if (path === 'moves/' || path === 'pokemon/') {
+				if (path === 'moves/' || path === 'pokemon/' || path === 'abilities/' || path === 'items/') {
 					this.app.go(path, this, true);
 					return;
 				}
