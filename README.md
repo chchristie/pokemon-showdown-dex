@@ -38,7 +38,26 @@ Important features include:
 Testing
 ------------------------------------------------------------------------
 
-You can test changes by running `npx serve -s -p 8082` in a terminal at the root of this repo, then going to localhost:8082 in a browser.
+Edit **index.template.html** for layout/script changes, then regenerate entrypoints:
+
+- `node build --dev` → **testclient.html** (local client URLs; routes live in `build`)
+- `node build` → **index.html** (uses `config/config.js` `routes.client`)
+
+Local dev uses **testclient.html** (not index.html):
+
+1. `node build --dev` after changing the template
+2. `npx serve -p 8081` in **pokemon-showdown-client** (after `node build` there)
+3. `npx serve -p 8082 -c serve.json` in this repo
+4. Open http://localhost:8082/
+
+Or run `node start-dev` from **pokemon-showdown** to start server, client, dex, and SSL proxy together.
+
+Deploy / production
+------------------------------------------------------------------------
+
+1. Copy `config/config-example.js` to `config/config.js` and set `routes.client` to your play host.
+2. Run `node build` — writes **index.html** from **index.template.html**.
+3. Serve **index.html** on the dex host (nginx `try_files` or static hosting). Do not deploy testclient.html to production.
 
 License
 ------------------------------------------------------------------------

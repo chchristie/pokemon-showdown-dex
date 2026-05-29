@@ -2,10 +2,8 @@
 <html><head>
 
 	<!--
-	  Local dev (from this repo):
-	    1. npx serve -p 8081  (pokemon-showdown-client repo)
-	    2. npx serve -s -p 8082  (this repo)
-	    3. optional HTTPS for /dt links in Showdown chats: local-ssl-proxy --source 8083 --target 8082
+	  Local dev: node build --dev  → testclient.html, then npx serve -p 8082 -c serve.json
+	  Deploy:     node build        → index.html (uses config/config.js)
 	-->
 	<meta charset="utf-8" />
 	<base href="/">
@@ -29,8 +27,8 @@
 	<div class="pfx-topbar">
 		<div class="header">
 			<ul class="nav">
-				<li><a class="button nav-first"><img src="/images/pokemonshowdownbeta.png" alt="Pok&eacute;mon Showdown! (beta)" /> PSdex testclient</a></li>
-				<li><a class="button nav-last" href="https://github.com/Zarel/Pokemon-Showdown-Dex">GitHub</a></li>
+				<li><a class="button nav-first" href="http://localhost:8081/play.pokemonshowdown.com/testclient?~~localhost:8000"><img src="/images/pokemonshowdownbeta.png" alt="Pok&eacute;mon Showdown! (beta)" /> Home</a></li>
+				<li><a class="button nav-last" href="https://github.com/chchristie/pokemon-showdown-dex">GitHub</a></li>
 			</ul>
 			<div style="clear:both"></div>
 		</div>

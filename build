@@ -1,54 +1,89 @@
 #!/usr/bin/env node
+'use strict';
 
 /**
- * This script parses index.html and sets the version query string of each
- * resource to be the MD5 hash of that resource.
+ * Builds HTML entrypoints from index.template.html.
+ *
+ *   node build       → index.html  (config/config.js routes)
+ *   node build --dev → testclient.html (local client server paths; constants below only)
  */
 
 const fs = require('fs');
-const crypto = require('crypto');
 const child_process = require('child_process');
 const Config = require('./config/config');
 
 process.chdir(__dirname);
 
+const TEMPLATE = 'index.template.html';
+
+/** Local dev only — used for testclient.html, not read from the template file. */
+const DEV_CLIENT = {
+	host: 'localhost:8081',
+	playPath: '/play.pokemonshowdown.com',
+};
+
 if (process.argv[2] === 'full') {
-	child_process.execSync('../client/build-tools/build-indexes', {stdio: 'inherit'});
+	child_process.execSync('../pokemon-showdown-client/build-tools/build-indexes', {stdio: 'inherit'});
 }
 
-function updateFiles() {
-	let indexContents = fs.readFileSync('index.template.php', {encoding: 'utf8'});
-
-	// add hashes to js and css files
-	process.stdout.write("Updating hashes... ");
-	indexContents = indexContents.replace(/(src|href)="\/(.*?)\?[a-z0-9]*?"/g, function (a, b, c) {
-		let hash = Math.random(); // just in case creating the hash fails
-		try {
-			var filepath = c;
-			if (c.includes('/play.pokemonshowdown.com/')) {
-				const filename = c.replace('/play.pokemonshowdown.com/', '');
-				filepath = '../play.pokemonshowdown.com/' + filename;
-			}
-			const fstr = fs.readFileSync(filepath, {encoding: 'utf8'});
-			hash = crypto.createHash('md5').update(fstr).digest('hex').substr(0, 8);
-		} catch (e) {}
-
-		return b + '="/' + c + '?' + hash + '"';
-	});
-	indexContents = indexContents.replace(/(src|href)="(.*?)\/(.*?)[a-z0-9]*?"/g, (match) => replaceRoutes(match));
-	console.log("DONE");
-
-	process.stdout.write("Writing new `index.php` file... ");
-	fs.writeFileSync('index.php', indexContents);
-	console.log("DONE");
+function clientOrigin(host) {
+	if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) {
+		return 'http://' + host;
+	}
+	return '//' + host;
 }
 
-function replaceRoutes(url) {
-	return url.replace('/replay.pokemonshowdown.com/', '/' + Config.routes.replays + '/')
-		.replace('/play.pokemonshowdown.com/', '/' + Config.routes.client + '/')
-		.replace('/pokemonshowdown.com/', '/' + Config.routes.root + '/');
+/** Production: nginx (or serve) root is the play client; no play.pokemonshowdown.com/ subpath. */
+function productionClientUrls() {
+	const origin = clientOrigin(Config.routes.client);
+	return {
+		CLIENT_HOME: origin + '/',
+		CLIENT_CONFIG: origin + '/config/config.js',
+		CLIENT_ASSET: origin,
+	};
 }
 
-updateFiles();
+/** Dev: `npx serve` on the client repo root includes a play.pokemonshowdown.com/ directory. */
+function devClientUrls() {
+	const origin = clientOrigin(DEV_CLIENT.host);
+	const playRoot = origin + DEV_CLIENT.playPath;
+	return {
+		CLIENT_HOME: origin + '/play.pokemonshowdown.com/testclient?~~localhost:8000',
+		CLIENT_CONFIG: origin + '/config/config.js',
+		CLIENT_ASSET: playRoot,
+	};
+}
 
-child_process.execSync('node ./cms/build', {stdio: 'inherit'});
+function renderTemplate(urls) {
+	let html = fs.readFileSync(TEMPLATE, 'utf8');
+	for (const [key, value] of Object.entries(urls)) {
+		html = html.split('{{' + key + '}}').join(value);
+	}
+	const leftover = html.match(/\{\{[A-Z_]+\}\}/g);
+	if (leftover) {
+		throw new Error('Unsubstituted template placeholders: ' + leftover.join(', '));
+	}
+	return html;
+}
+
+function writeHtml(filename, urls) {
+	fs.writeFileSync(filename, renderTemplate(urls));
+}
+
+function buildIndexHtml() {
+	process.stdout.write('Building index.html... ');
+	writeHtml('index.html', productionClientUrls());
+	console.log('DONE');
+}
+
+function buildTestclientHtml() {
+	process.stdout.write('Building testclient.html... ');
+	writeHtml('testclient.html', devClientUrls());
+	console.log('DONE');
+}
+
+if (process.argv.includes('--dev')) {
+	buildTestclientHtml();
+} else {
+	buildIndexHtml();
+}
