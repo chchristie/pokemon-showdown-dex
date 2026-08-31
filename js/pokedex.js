@@ -903,6 +903,7 @@ var PokedexTagPanel = PokedexResultPanel.extend({
 		}
 	},
 	initialize: function(id) {
+		id = toID(id);
 		var tag = this.table[id];
 		var name = (tag ? tag.name : id);
 		this.id = id;
@@ -1325,6 +1326,7 @@ var PokedexCategoryPanel = PokedexResultPanel.extend({
 });
 var PokedexTierPanel = PokedexResultPanel.extend({
 	initialize: function(id) {
+		id = toID(id);
 		var tierTable = {
 			ag: "AG",
 			uber: "Uber",

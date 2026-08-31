@@ -48,7 +48,7 @@ function devClientUrls() {
 	const origin = clientOrigin(DEV_CLIENT.host);
 	const playRoot = origin + DEV_CLIENT.playPath;
 	return {
-		CLIENT_HOME: origin + '/play.pokemonshowdown.com/testclient?~~localhost:8000',
+		CLIENT_HOME: origin + '/play.pokemonshowdown.com/testclient-old?~~localhost:8000',
 		CLIENT_CONFIG: origin + '/config/config.js',
 		CLIENT_ASSET: playRoot,
 	};
