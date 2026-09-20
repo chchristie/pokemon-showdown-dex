@@ -556,3 +556,57 @@ a.subtle:hover {
 	margin-top: 1.25em;
 	clear: left;
 }
+
+/* DigiPen dex: the header nav.
+   Upstream has two buttons here (Home, GitHub); this fork has six plus a detached Play. Measured, the
+   six need 457px and `.header .nav` reserves another 155px at the left for the logo it positions
+   absolutely, so the `ul` alone wants 612px inside upstream's 605px header — seven pixels over. GitHub
+   wrapped in front of Home, and that pushed the floated `.nav-play` below a `.pfx-topbar` whose height is
+   a fixed 50px, so Play left the header entirely and sat behind the page body.
+   Both halves are fixed: a wider header, and a nowrap flex row so a longer label can never wrap it again
+   (the buttons are floats, and a float row one pixel too wide wraps). Below 520px pokedex.css already
+   collapses the nav to Home plus the selected button and hides Play, which still works: the hidden
+   buttons are `display: none` and so are not flex items either. */
+.pfx-topbar .header {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: center;
+}
+.pfx-topbar .header .nav {
+	display: flex;
+	flex-wrap: nowrap;
+}
+/* Play sat 6px lower than the group. `panels.css` has `.nav a.button { display: inline }`, which does not
+   match `.nav-play`, so Play fell back to `a.button { display: inline-block }` — and an inline element
+   paints its padding outside the line box, putting the group's buttons 6px higher than an inline-block one
+   with the same padding. Matching the display matches the baseline. */
+.pfx-topbar .header .nav-play a.button {
+	display: inline;
+}
+@media all and (min-width: 900px) {
+	.pfx-topbar .header {
+		max-width: 720px;
+	}
+}
+
+/* DigiPen dex: collapse the nav earlier than upstream does.
+   The full six-button nav plus Play needs about 690px. Upstream collapses to Home plus the selected
+   button at 520px, which was right for its two buttons and leaves 521-690px overflowing the topbar
+   sideways here. Only the nav rules are repeated — upstream's 520px block also restyles the stats table
+   and ability entries, which have nothing to do with this and should keep their own breakpoint. */
+@media (max-width: 700px) {
+	.header .nav-play {
+		display: none;
+	}
+	.nav a.button {
+		display: none;
+	}
+	.nav a.button.nav-first {
+		display: inline;
+	}
+	.nav a.button.cur {
+		border-top-right-radius: 5px;
+		border-bottom-right-radius: 5px;
+		display: inline;
+	}
+}

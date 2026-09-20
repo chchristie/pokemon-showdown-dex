@@ -33,6 +33,21 @@ function clientOrigin(host) {
 	return '//' + host;
 }
 
+/**
+ * A sibling site's host, for the header nav.
+ *
+ * `config/config.js` is gitignored and the live one predates these keys, so a missing route is **derived**
+ * from the client host by swapping its first label rather than breaking the build: the fork's sites are
+ * all `<service>.<domain>` (`play.` / `dex.` / `analysis.`), and so are the official ones the example
+ * config points at. Set `routes.dex` and `routes.analysis` explicitly for anything that does not fit.
+ */
+function siteRoute(name) {
+	if (Config.routes[name]) return Config.routes[name];
+	const labels = Config.routes.client.split('.');
+	labels[0] = name;
+	return labels.join('.');
+}
+
 /** Production: nginx (or serve) root is the play client; no play.pokemonshowdown.com/ subpath. */
 function productionClientUrls() {
 	const origin = clientOrigin(Config.routes.client);
@@ -40,6 +55,9 @@ function productionClientUrls() {
 		CLIENT_HOME: origin + '/',
 		CLIENT_CONFIG: origin + '/config/config.js',
 		CLIENT_ASSET: origin,
+		// this site: relative, so it works whatever host it is served from
+		DEX_HOME: '/',
+		ANALYSIS_HOME: clientOrigin(siteRoute('analysis')) + '/',
 	};
 }
 
@@ -51,6 +69,9 @@ function devClientUrls() {
 		CLIENT_HOME: origin + '/play.pokemonshowdown.com/testclient-old?~~localhost:8000',
 		CLIENT_CONFIG: origin + '/config/config.js',
 		CLIENT_ASSET: playRoot,
+		DEX_HOME: '/',
+		// `node start-analysis` serves the analysis tool from the client repo on 8081, API on 8002
+		ANALYSIS_HOME: origin + '/analysis.pokemonshowdown.com/?~~localhost:8002',
 	};
 }
 

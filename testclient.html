@@ -26,9 +26,20 @@
 
 	<div class="pfx-topbar">
 		<div class="header">
+			<!-- The fork's own sites first, then Smogon's, then this repo. Play is a separate `nav-play`
+			     list, as the upstream dex has it: `.header .nav-play` in theme/panels.css gives it its
+			     own padding, and `.nav .button { border-radius: 0 }` does not reach it, so it keeps the
+			     default rounded `.button` shape on all four corners. -->
 			<ul class="nav">
 				<li><a class="button nav-first" href="http://localhost:8081/play.pokemonshowdown.com/testclient-old?~~localhost:8000"><img src="/images/pokemonshowdownbeta.png" alt="Pok&eacute;mon Showdown! (beta)" /> Home</a></li>
+				<li><a class="button cur" href="/">Pok&eacute;dex</a></li>
+				<li><a class="button" href="http://localhost:8081/analysis.pokemonshowdown.com/?~~localhost:8002">Analysis</a></li>
+				<li><a class="button" href="https://smogon.com/dex/">Strategy</a></li>
+				<li><a class="button" href="https://smogon.com/forums/">Forum</a></li>
 				<li><a class="button nav-last" href="https://github.com/chchristie/pokemon-showdown-dex">GitHub</a></li>
+			</ul>
+			<ul class="nav-play">
+				<li><a class="button greenbutton" href="http://localhost:8081/play.pokemonshowdown.com/testclient-old?~~localhost:8000">Play</a></li>
 			</ul>
 			<div style="clear:both"></div>
 		</div>
