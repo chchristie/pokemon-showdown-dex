@@ -1,32 +1,100 @@
 BattleSearch.urlRoot = '/';
 
 /**
- * DigiPen-original entries (`isNonstandard` like `DigiPen`, `DigiPen CAP`, …) have no vanilla
- * counterpart, so the dex hides the base/DigiPen version control and always uses mod data.
+ * The dex shows one custom content mod at a time.
+ *
+ * Which mods exist comes from the server's registry, shipped to the client on
+ * `BattleTeambuilderTable.customMods` and wrapped by `BattleCustomMods` in the battledata bundle.
+ * Nothing here names a mod: adding one to that registry is what adds it to the dex.
+ *
+ * Two independent controls:
+ *   - the gear menu's dropdown picks which mod the whole site shows;
+ *   - each entry page's "Show base game data" checkbox flips that one entry to vanilla.
+ */
+var POKEDEX_MOD_PREF = 'dexCustomMod';
+
+function pokedexMods() {
+	return (window.BattleCustomMods ? BattleCustomMods.all() : []);
+}
+
+/** The mod the dex is currently showing, or null if there are none. */
+function pokedexCurrentMod() {
+	var mods = pokedexMods();
+	if (!mods.length) return null;
+	var saved = null;
+	try {
+		saved = window.localStorage && localStorage.getItem(POKEDEX_MOD_PREF);
+	} catch (e) {} // private browsing, or storage disabled
+	for (var i = 0; i < mods.length; i++) {
+		if (mods[i].id === saved) return mods[i];
+	}
+	return mods[0];
+}
+
+function pokedexSetCurrentMod(id) {
+	try {
+		if (window.localStorage) localStorage.setItem(POKEDEX_MOD_PREF, id);
+	} catch (e) {}
+}
+
+/**
+ * The mod an entry belongs to exclusively, or null for base-game content.
+ *
+ * Checked against every mod rather than the selected one, so a direct link to another mod's entry
+ * still renders with that mod's data instead of falling back to vanilla.
  * @param {'pokemon' | 'move' | 'ability' | 'item'} kind
  */
-function pokedexIsDigiPenExclusive(kind, id) {
+function pokedexEntryMod(kind, id) {
 	id = toID(id);
 	var row;
 	if (kind === 'pokemon') row = BattlePokedex[id];
 	else if (kind === 'move') row = BattleMovedex[id];
 	else if (kind === 'ability') row = BattleAbilities[id];
 	else if (kind === 'item') row = BattleItems[id];
-	else return false;
-	return !!(row && typeof row.isNonstandard === 'string' && row.isNonstandard.startsWith('DigiPen'));
+	else return null;
+	if (!row || !window.BattleCustomMods) return null;
+	return BattleCustomMods.byLabel(row.isNonstandard);
+}
+
+/**
+ * A mod's own entries have no vanilla counterpart, so the base/mod control is hidden for them and
+ * they always render from mod data.
+ * @param {'pokemon' | 'move' | 'ability' | 'item'} kind
+ */
+function pokedexIsModExclusive(kind, id) {
+	return !!pokedexEntryMod(kind, id);
 }
 
 /** @param {'pokemon' | 'move' | 'ability' | 'item'} kind */
 function pokedexShowVersionToggle(kind, id) {
-	if (pokedexIsDigiPenExclusive(kind, id)) return false;
+	if (pokedexIsModExclusive(kind, id)) return false;
 	return kind === 'pokemon' || kind === 'move' || kind === 'ability' || kind === 'item';
 }
 
 /** @param {'pokemon' | 'move' | 'ability' | 'item'} kind */
 function pokedexModDex(panel, kind) {
-	if (pokedexIsDigiPenExclusive(kind, panel.id)) return Dex.mod('gen9digipen');
-	if (panel.dexMode !== 'digipen') return Dex;
-	return Dex.mod('gen9digipen');
+	var owner = pokedexEntryMod(kind, panel.id);
+	if (owner) return Dex.mod(owner.id);
+	if (panel.dexMode === 'base') return Dex;
+	var current = pokedexCurrentMod();
+	return current ? Dex.mod(current.id) : Dex;
+}
+
+/** The mod whose data this panel is showing, or null when showing the base game. */
+function pokedexPanelMod(panel, kind) {
+	return pokedexEntryMod(kind, panel.id) || (panel.dexMode === 'base' ? null : pokedexCurrentMod());
+}
+
+/**
+ * The format id the dex's search runs under.
+ *
+ * `<prefix>dexnatdex` puts `battle-dex-search` into the selected mod's National Dex tables and into
+ * its dex-site ordering: the mod's own entries first, then base-game ones it rebalanced, then the
+ * rest. With no mods registered it falls back to the plain National Dex.
+ */
+function pokedexSearchFormat() {
+	var mod = pokedexCurrentMod();
+	return mod ? mod.prefix + 'dexnatdex' : 'natdex';
 }
 
 /** HTML `name` on the base-game checkbox — unique per panel. */
@@ -43,9 +111,9 @@ function pokedexDexBaseGameToggleHtml(panel, id, kind) {
 		'<input type="checkbox" name="' + name + '" class="dexentry-basegame-cb"' + checked + ' /> Show base game data</label></div>';
 }
 
-/** When to show DigiPen dex metadata: DigiPen version, or always for DigiPen-exclusive entries. */
-function pokedexShowDigiPenDexMetadata(panel, kind) {
-	return pokedexIsDigiPenExclusive(kind, panel.id) || panel.dexMode === 'digipen';
+/** When to show a mod's extra dex metadata: its own entries, or any entry while showing that mod. */
+function pokedexShowModMetadata(panel, kind) {
+	return !!pokedexPanelMod(panel, kind);
 }
 
 /**
@@ -133,13 +201,13 @@ function pokedexResolveLearnset(id, pokemon) {
 }
 
 /**
- * True if `moveid` exists for this species only because of the gen9digipen learnset layer
- * (vanilla dist learnset had no entry for that move on that species id).
+ * True if `moveid` exists for this species only because of the selected mod's learnset layer,
+ * i.e. the vanilla learnset had no entry for that move on that species.
  * Populated at build time as `BattleLearnsetsModAdditions[modid]` in learnsets.js.
- * TODO(phase 5): read the mod the dex's mod switcher has selected instead of hardcoding DigiPen.
  */
-function pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid) {
-	var add = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
+function pokedexLearnsetMoveModOnly(pokemonid, moveid) {
+	var mod = pokedexCurrentMod();
+	var add = mod && (window.BattleLearnsetsModAdditions || {})[mod.id];
 	if (!add) return false;
 	var sp = Dex.species.get(pokemonid);
 	var baseId = toID(sp.baseSpecies);
@@ -151,17 +219,18 @@ function pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid) {
 	return false;
 }
 
-function pokedexPokemonGainedMoveInDigipen(moveid, pokemonid) {
-	if (pokedexIsDigiPenExclusive('pokemon', pokemonid)) return false;
-	return pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid);
+function pokedexPokemonGainedMoveInMod(moveid, pokemonid) {
+	if (pokedexIsModExclusive('pokemon', pokemonid)) return false;
+	return pokedexLearnsetMoveModOnly(pokemonid, moveid);
 }
 
 /**
- * Move IDs added only in the DigiPen mod (vs vanilla learnsets), for this species / base.
+ * Move IDs the selected mod adds (vs vanilla learnsets), for this species / base.
  * Used by the Pokémon page learnset split.
  */
-function pokedexDigiPenAdditionMoveIds(id, pokemon) {
-	var add = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
+function pokedexModAdditionMoveIds(id, pokemon) {
+	var mod = pokedexCurrentMod();
+	var add = mod && (window.BattleLearnsetsModAdditions || {})[mod.id];
 	if (!add) return {};
 	var baseId = toID(pokemon.baseSpecies);
 	var set = {};
@@ -189,12 +258,14 @@ function pokedexSpeciesPokedexRow(dexMod, pokemonId) {
 	return null;
 }
 
-function pokedexPokemonGainedAbilityInDigipen(abilityId, pokemonId) {
+function pokedexPokemonGainedAbilityInMod(abilityId, pokemonId) {
 	var abilityName = Dex.abilities.get(abilityId).name;
-	var digiSp = Dex.mod('gen9digipen').species.get(pokemonId);
+	var mod = pokedexCurrentMod();
+	if (!mod) return false;
+	var digiSp = Dex.mod(mod.id).species.get(pokemonId);
 	if (!pokedexPokemonShowsAbilityName(digiSp, abilityName)) return false;
 	var baseRow = pokedexSpeciesPokedexRow(Dex, pokemonId);
-	var digiRow = pokedexSpeciesPokedexRow(Dex.mod('gen9digipen'), pokemonId);
+	var digiRow = pokedexSpeciesPokedexRow(Dex.mod(mod.id), pokemonId);
 	if (baseRow && digiRow) {
 		return JSON.stringify(baseRow.abilities) !== JSON.stringify(digiRow.abilities);
 	}
@@ -202,10 +273,10 @@ function pokedexPokemonGainedAbilityInDigipen(abilityId, pokemonId) {
 	return !pokedexPokemonShowsAbilityName(baseSp, abilityName);
 }
 
-/** True when move/ability lists should bold species that gained the entry in the DigiPen mod (non-exclusive pages only). */
-function pokedexPanelHighlightsDigipenDistribution(panel, kind) {
-	if (pokedexIsDigiPenExclusive(kind, panel.id)) return false;
-	return panel.dexMode === 'digipen';
+/** True when move/ability lists should bold species that gained the entry in the selected mod (non-exclusive pages only). */
+function pokedexPanelHighlightsModDistribution(panel, kind) {
+	if (pokedexIsModExclusive(kind, panel.id)) return false;
+	return panel.dexMode === 'mod';
 }
 
 function pokedexWrapPokemonRowIfGained(html, gained) {
@@ -214,12 +285,12 @@ function pokedexWrapPokemonRowIfGained(html, gained) {
 	return html.replace(/<li class="result">/i, '<li class="result pokedex-modified-pokemon">');
 }
 
-/** Split encoded learnset rows into mod additions vs rest (DigiPen view, non–DigiPen-exclusive species only). */
-function pokedexSplitLearnsetByModAdditions(speciesId, pokemon, encodedMoves, dexModeDigipen) {
-	if (pokedexIsDigiPenExclusive('pokemon', speciesId) || !dexModeDigipen) {
+/** Split encoded learnset rows into the mod's additions vs the rest (mod view, base-game species only). */
+function pokedexSplitLearnsetByModAdditions(speciesId, pokemon, encodedMoves, dexModeMod) {
+	if (pokedexIsModExclusive('pokemon', speciesId) || !dexModeMod) {
 		return { addMoves: [], mainMoves: encodedMoves };
 	}
-	var addIds = pokedexDigiPenAdditionMoveIds(speciesId, pokemon);
+	var addIds = pokedexModAdditionMoveIds(speciesId, pokemon);
 	if (!addIds || !Object.keys(addIds).length) {
 		return { addMoves: [], mainMoves: encodedMoves };
 	}
@@ -361,14 +432,14 @@ function pokedexGetMoveForLearnsetRow(moveDex, moveid) {
 	return BattleMovedex[moveid];
 }
 
-function pokedexMoveRowHtml(move, desc, moveid, boldDigiPenModified) {
+function pokedexMoveRowHtml(move, desc, moveid, boldModEntries) {
 	var row = BattleSearch.renderTaggedMoveRow(move, desc);
-	if (boldDigiPenModified) {
-		// DigiPen-only moves use isNonstandard: "DigiPen" in moves.js; overlays may use modified.
+	if (boldModEntries) {
+		// A mod's own moves carry its label as isNonstandard; rebalanced ones carry it as modified.
 		var mod =
-			(move && move.modified === 'DigiPen') ||
-			(BattleMovedex[moveid] && BattleMovedex[moveid].modified === 'DigiPen') ||
-			pokedexIsDigiPenExclusive('move', moveid);
+			(move && !!BattleCustomMods.byLabel(move.modified)) ||
+			(BattleMovedex[moveid] && !!BattleCustomMods.byLabel(BattleMovedex[moveid].modified)) ||
+			pokedexIsModExclusive('move', moveid);
 		if (mod) {
 			return row.replace(/<li class="result">/i, '<li class="result pokedex-modified-move">');
 		}
@@ -376,7 +447,7 @@ function pokedexMoveRowHtml(move, desc, moveid, boldDigiPenModified) {
 	return row;
 }
 
-function pokedexRenderLearnsetEncodedList(moves, prevo1, prevo2, omitSectionHeaders, moveDex, boldDigiPenModified) {
+function pokedexRenderLearnsetEncodedList(moves, prevo1, prevo2, omitSectionHeaders, moveDex, boldModEntries) {
 	var buf = '';
 	var last = '';
 	var lastChanged = false;
@@ -435,7 +506,7 @@ function pokedexRenderLearnsetEncodedList(moves, prevo1, prevo2, omitSectionHead
 		default:
 			desc = '';
 		}
-		buf += pokedexMoveRowHtml(move, desc, moveid, boldDigiPenModified);
+		buf += pokedexMoveRowHtml(move, desc, moveid, boldModEntries);
 	}
 	return buf;
 }
@@ -447,7 +518,52 @@ Dex.escapeHTML = function (str, jsEscapeToo) {
 };
 
 var Topbar = Panels.Topbar.extend({
-	height: 51
+	height: 51,
+	events: {
+		'click .dexsettings-button': 'openSettings'
+	},
+	openSettings: function (e) {
+		e.preventDefault();
+		this.app.addPopup(PokedexSettingsPopup, { source: e.currentTarget });
+	}
+});
+
+/**
+ * The gear menu in the header.
+ *
+ * Holds the one site-wide choice the dex has: which custom content mod to show. The per-entry
+ * "Show base game data" checkbox is separate and stays on each entry page.
+ */
+var PokedexSettingsPopup = Panels.Popup.extend({
+	events: {
+		'change select[name=dexmod]': 'changeMod'
+	},
+	initialize: function () {
+		var mods = pokedexMods();
+		var current = pokedexCurrentMod();
+		var buf = '<h3>Settings</h3>';
+		if (!mods.length) {
+			buf += '<p>No custom content is available.</p>';
+		} else {
+			buf += '<p><label class="dexsettings-label">Show content from</label><br />';
+			buf += '<select name="dexmod" class="dexsettings-select">';
+			for (var i = 0; i < mods.length; i++) {
+				buf += '<option value="' + BattleLog.escapeHTML(mods[i].id) + '"' +
+					(current && current.id === mods[i].id ? ' selected' : '') + '>' +
+					BattleLog.escapeHTML(mods[i].fullName) + '</option>';
+			}
+			buf += '</select></p>';
+			buf += '<p class="dexsettings-note">Each entry also has a &ldquo;Show base game data&rdquo; ' +
+				'checkbox for comparing against the base game.</p>';
+		}
+		this.html(buf);
+	},
+	changeMod: function (e) {
+		pokedexSetCurrentMod(e.currentTarget.value);
+		// Every panel reads the selected mod when it renders, and search results are cached per
+		// format, so reloading is both the simplest and the most reliable way to switch.
+		window.location.reload();
+	}
 });
 
 var PokedexResultPanel = Panels.Panel.extend({
@@ -463,13 +579,13 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
+		this.dexMode = e.currentTarget.checked ? 'base' : 'mod';
 		this.renderItemDex();
 	},
 	initialize: function (id) {
 		this.id = toID(id);
 		if (pokedexShowVersionToggle('item', this.id)) {
-			if (!this.dexMode) this.dexMode = 'digipen';
+			if (!this.dexMode) this.dexMode = 'mod';
 		} else {
 			this.dexMode = null;
 		}
@@ -487,8 +603,9 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 		buf += pokedexDexBaseGameToggleHtml(this, id, 'item');
 		buf += '<h1><span class="itemicon" style="'+Dex.getItemIcon(item)+'"></span> <a href="/items/'+id+'" data-target="push" class="subtle">'+item.name+'</a></h1>';
 		buf += '</div>';
-		if (typeof item.isNonstandard === 'string' && item.isNonstandard.startsWith('DigiPen')) {
-			buf += '<div class="warning">An item by the DigiPen Pok&eacute;mon Club.</div>';
+		var itemMod = pokedexEntryMod('item', this.id);
+		if (itemMod) {
+			buf += '<div class="warning">An item from ' + BattleLog.escapeHTML(itemMod.fullName) + '.</div>';
 		}
 		buf += '<p>'+Dex.escapeHTML(item.desc||item.shortDesc)+'</p>';
 		console.log(item.dexEntry);
@@ -514,7 +631,7 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 		}
 		if (pastGenChanges) buf += '</dl>';
 
-		if (pokedexShowDigiPenDexMetadata(this, 'item')) {
+		if (pokedexShowModMetadata(this, 'item')) {
 			var itemRow = window.BattleItems && BattleItems[id];
 			var contributors = item.contributors || (itemRow && itemRow.contributors);
 			buf += pokedexFormatContributorBlockHtml(contributors);
@@ -530,12 +647,12 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
+		this.dexMode = e.currentTarget.checked ? 'base' : 'mod';
 		this.renderAbilityDex();
 	},
 	initialize: function (id) {
 		this.id = toID(id);
-		if (!this.dexMode) this.dexMode = 'digipen';
+		if (!this.dexMode) this.dexMode = 'mod';
 		this.renderAbilityDex();
 	},
 	renderAbilityDex: function () {
@@ -552,8 +669,9 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		buf += '</div>';
 
 		if (ability.isNonstandard && ability.id !== 'noability') {
-			if (typeof ability.isNonstandard === 'string' && ability.isNonstandard.startsWith('DigiPen')) {
-				buf += '<div class="warning">An ability by the DigiPen Pok&eacute;mon Club.</div>';
+			var abilityMod = pokedexEntryMod('ability', this.id);
+			if (abilityMod) {
+				buf += '<div class="warning">An ability from ' + BattleLog.escapeHTML(abilityMod.fullName) + '.</div>';
 			} else {
 				buf += '<div class="warning">An ability by <a href="http://www.smogon.com/cap/" target="_blank">Smogon <strong>CAP</strong></a>.</div>';
 			}
@@ -597,18 +715,19 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		var dex = pokedexModDex(this, 'ability');
 		var ability = dex.abilities.get(this.id);
 		var buf = '';
-		var highlightDigiPen = pokedexPanelHighlightsDigipenDistribution(this, 'ability');
+		var highlightMod = pokedexPanelHighlightsModDistribution(this, 'ability');
 		for (var pokemonid in BattlePokedex) {
 			var sp = dex.species.get(pokemonid);
 			if (!sp.abilities) continue;
 			if (sp.isNonstandard && !ability.isNonstandard) {
 				var ns = sp.isNonstandard;
-				var allowDigiPenMon = highlightDigiPen && typeof ns === 'string' && ns === 'DigiPen';
-				if (!allowDigiPenMon) continue;
+				var selected = pokedexCurrentMod();
+				var allowModSpecies = highlightMod && !!selected && ns === selected.label;
+				if (!allowModSpecies) continue;
 			}
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
 				var row = BattleSearch.renderPokemonRow(sp);
-				if ((highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) || pokedexIsDigiPenExclusive('pokemon', pokemonid)) {
+				if ((highlightMod && pokedexPokemonGainedAbilityInMod(this.id, pokemonid)) || pokedexIsModExclusive('pokemon', pokemonid)) {
 					row = pokedexWrapPokemonRowIfGained(row, true);
 				}
 				buf += row;
@@ -621,14 +740,15 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 			if (!sp.abilities) continue;
 			if (!(sp.isNonstandard && !ability.isNonstandard)) continue;
 			var ns2 = sp.isNonstandard;
-			if (highlightDigiPen && typeof ns2 === 'string' && ns2 === 'DigiPen') continue;
+			var selected2 = pokedexCurrentMod();
+			if (highlightMod && !!selected2 && ns2 === selected2.label) continue;
 			if (pokedexPokemonShowsAbilityName(sp, ability.name)) {
 				if (!hasNonstandard) {
 					buf += '<li class="resultheader"><h3>Unavailable Pok&eacute;mon with this ability</h3></li>';
 					hasNonstandard = true;
 				}
 				var row2 = BattleSearch.renderPokemonRow(sp);
-				if ((highlightDigiPen && pokedexPokemonGainedAbilityInDigipen(this.id, pokemonid)) || pokedexIsDigiPenExclusive('pokemon', pokemonid)) {
+				if ((highlightMod && pokedexPokemonGainedAbilityInMod(this.id, pokemonid)) || pokedexIsModExclusive('pokemon', pokemonid)) {
 					row2 = pokedexWrapPokemonRowIfGained(row2, true);
 				}
 				buf += row2;
@@ -638,7 +758,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 		this.$('.utilichart').html(buf);
 
 		this.$('.dexentry .dexentry-contributor-block').remove();
-		if (pokedexShowDigiPenDexMetadata(this, 'ability')) {
+		if (pokedexShowModMetadata(this, 'ability')) {
 			var abRow = window.BattleAbilities && BattleAbilities[this.id];
 			var contributors = ability.contributors || (abRow && abRow.contributors);
 			var foot = pokedexFormatContributorBlockHtml(contributors);

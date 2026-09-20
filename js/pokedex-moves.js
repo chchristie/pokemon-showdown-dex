@@ -10,14 +10,14 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
+		this.dexMode = e.currentTarget.checked ? 'base' : 'mod';
 		this.results = null;
 		this.distCacheKey = null;
 		this.renderMoveDex();
 	},
 	initialize: function (id) {
 		this.id = toID(id);
-		if (!this.dexMode) this.dexMode = 'digipen';
+		if (!this.dexMode) this.dexMode = 'mod';
 		this.results = null;
 		this.distCacheKey = null;
 		this.renderMoveDex();
@@ -40,8 +40,9 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			buf += '<div class="warning">Made for testing; <strong>not a real move</strong>.</div>';
 		} else if (move.isNonstandard) {
 			buf += '<div class="warning">';
-			if (typeof move.isNonstandard === 'string' && move.isNonstandard.startsWith('DigiPen')) {
-				buf += 'A move by the DigiPen Pok&eacute;mon Club.';
+			var moveMod = pokedexEntryMod('move', move.id);
+			if (moveMod) {
+				buf += 'A move from ' + BattleLog.escapeHTML(moveMod.fullName) + '.';
 			} else switch (move.isNonstandard) {
 			case 'Past':
 				buf += 'Only available in <strong>past generations</strong>.';
@@ -332,7 +333,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			}
 		}
 
-		if (pokedexShowDigiPenDexMetadata(this, 'move')) {
+		if (pokedexShowModMetadata(this, 'move')) {
 			buf += pokedexFormatPokemonStyleDexEntryHtml(move.dexEntry);
 		}
 
@@ -475,7 +476,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		buf += '<ul class="utilichart metricchart nokbd">';
 		buf += '</ul>';
 
-		if (pokedexShowDigiPenDexMetadata(this, 'move')) {
+		if (pokedexShowModMetadata(this, 'move')) {
 			var moveRow = window.BattleMovedex && BattleMovedex[id];
 			buf += pokedexFormatContributorBlockHtml(move.contributors || (moveRow && moveRow.contributors));
 		}
@@ -491,20 +492,21 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		var cacheKey = moveid + '|' + (this.dexMode || '');
 		if (this.distCacheKey === cacheKey && this.results) return this.results;
 		var results = [];
-		var digiView = this.dexMode === 'digipen' || pokedexIsDigiPenExclusive('move', this.id);
-		var baseGameView = this.dexMode === 'base' && !pokedexIsDigiPenExclusive('move', this.id);
-		var additions = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
+		var modView = this.dexMode === 'mod' || pokedexIsModExclusive('move', this.id);
+		var baseGameView = this.dexMode === 'base' && !pokedexIsModExclusive('move', this.id);
+		var selectedMod = pokedexCurrentMod();
+		var additions = selectedMod && (window.BattleLearnsetsModAdditions || {})[selectedMod.id];
 		for (var pokemonid in BattleLearnsets) {
 			if (!BattlePokedex[pokemonid] || !BattleLearnsets[pokemonid]) continue;
 			if (BattlePokedex[pokemonid].isNonstandard) {
 				var ns = BattlePokedex[pokemonid].isNonstandard;
-				var allowDigiPenMon = digiView && typeof ns === 'string' && ns.startsWith('DigiPen');
-				if (!allowDigiPenMon) continue;
+				var allowModSpecies = modView && !!BattleCustomMods.byLabel(ns);
+				if (!allowModSpecies) continue;
 			}
 			if (!BattleLearnsets[pokemonid].learnset) continue;
 			var sources = BattleLearnsets[pokemonid].learnset[moveid];
 			if (!sources) continue;
-			if (baseGameView && additions && pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid)) continue;
+			if (baseGameView && additions && pokedexLearnsetMoveModOnly(pokemonid, moveid)) continue;
 			if (typeof sources === 'string') sources = [sources];
 			var atLeastOne = false;
 			for (var i=0, len=sources.length, gen=''+Dex.gen; i<len; i++) {
@@ -634,9 +636,9 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				break;
 			}
 			var inner = BattleSearch.renderTaggedPokemonRowInner(template, desc);
-			var boldGainedMove = pokedexPanelHighlightsDigipenDistribution(this, 'move') && pokedexPokemonGainedMoveInDigipen(this.id, id);
-			var boldDigiPenSpecies = pokedexIsDigiPenExclusive('pokemon', id);
-			if (boldGainedMove || boldDigiPenSpecies) {
+			var boldGainedMove = pokedexPanelHighlightsModDistribution(this, 'move') && pokedexPokemonGainedMoveInMod(this.id, id);
+			var boldModSpecies = pokedexIsModExclusive('pokemon', id);
+			if (boldGainedMove || boldModSpecies) {
 				var tagged = inner.replace(
 					'<span class="col shortpokemonnamecol">',
 					'<span class="col shortpokemonnamecol pokedex-modified-pokemon-name">'

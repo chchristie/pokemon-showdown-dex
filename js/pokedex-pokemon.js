@@ -7,12 +7,12 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		'change .dexsource-toggle input[type=checkbox]': 'changeDexSource',
 	},
 	changeDexSource: function (e) {
-		this.dexMode = e.currentTarget.checked ? 'base' : 'digipen';
+		this.dexMode = e.currentTarget.checked ? 'base' : 'mod';
 		this.renderPokemonDex();
 	},
 	initialize: function (id) {
 		this.id = toID(id);
-		if (!this.dexMode) this.dexMode = 'digipen';
+		if (!this.dexMode) this.dexMode = 'mod';
 		this.renderPokemonDex();
 	},
 	renderPokemonDex: function () {
@@ -37,7 +37,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		if (pokemon.num > 0) buf += ' <code>#'+pokemon.num+'</code>';
 		buf += '</h1>';
 		buf += '</div>';
-		if (pokedexShowDigiPenDexMetadata(this, 'pokemon') && pokemon.title) {
+		if (pokedexShowModMetadata(this, 'pokemon') && pokemon.title) {
 			buf += '<p class="dexentry-subtitle">' + Dex.escapeHTML(pokemon.title) + ' Pok&eacute;mon</p>';
 		}
 		buf += '</div>';
@@ -53,10 +53,9 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 				buf += '<div class="warning">Pok&eacute;mon <strong>Let\'s Go, Pikachu! and Let\'s Go, Eevee!</strong> only.</div>';
 			} else if (pokemon.isNonstandard === 'Gigantamax') {
 				buf += '<div class="warning"><strong>Not obtainable</strong> in the games, even via hacking.</div>';
-			} else if (pokemon.isNonstandard === 'DigiPen') {
-				buf += '<div class="warning">A Pok&eacute;mon by the DigiPen Pok&eacute;mon Club.</div>';
-			} else if (pokemon.isNonstandard === 'DigiPen Past' || pokemon.isNonstandard === 'DigiPen Future') {
-				buf += '<div class="warning">A Pok&eacute;mon by the DigiPen Pok&eacute;mon Club. Only usable in DigiPen National Dex formats.</div>';
+			} else if (pokedexEntryMod('pokemon', pokemon.id)) {
+				buf += '<div class="warning">A Pok&eacute;mon from ' +
+					BattleLog.escapeHTML(pokedexEntryMod('pokemon', pokemon.id).fullName) + '.</div>';
 			} else if (pokemon.num > 0) {
 				buf += '<div class="warning"><strong>Unreleased</strong>.</div>';
 			} else {
@@ -96,7 +95,8 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 
 			if (i !== '0') buf += ' | ';
 			var aid = toID(pokemon.abilities[i]);
-			var abMod = BattleAbilities[aid] && (BattleAbilities[aid].modified === 'DigiPen' || BattleAbilities[aid].isNonstandard === 'DigiPen');
+			var abRow = BattleAbilities[aid];
+		var abMod = !!abRow && !!(BattleCustomMods.byLabel(abRow.modified) || BattleCustomMods.byLabel(abRow.isNonstandard));
 			if (i === 'H') {
 				buf += (abMod ? '<strong>' : '') + '<a href="/abilities/' + aid + '" data-target="push"><em>' + pokemon.abilities[i] + '</em></a>' + (abMod ? '</strong>' : '');
 			} else {
@@ -240,7 +240,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			buf += '<div style="clear:left"></div>';
 		}
 
-		if (pokedexShowDigiPenDexMetadata(this, 'pokemon')) {
+		if (pokedexShowModMetadata(this, 'pokemon')) {
 			buf += pokedexFormatPokemonStyleDexEntryHtml(pokemon.dexEntry);
 		}
 
@@ -299,11 +299,11 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		var encAll = builtPreview.moves;
 		var prevo1p = builtPreview.prevo1;
 		var prevo2p = builtPreview.prevo2;
-		var splitP = pokedexSplitLearnsetByModAdditions(id, pokemon, encAll, this.dexMode === 'digipen');
-		var boldDigiPenMoves = pokedexIsDigiPenExclusive('pokemon', id) || this.dexMode === 'digipen';
+		var splitP = pokedexSplitLearnsetByModAdditions(id, pokemon, encAll, this.dexMode === 'mod');
+		var boldModMoves = pokedexIsModExclusive('pokemon', id) || this.dexMode === 'mod';
 		if (splitP.addMoves.length) {
 			buf += '<li class="resultheader"><h3>Movepool additions</h3></li>';
-			buf += pokedexRenderLearnsetEncodedList(splitP.addMoves, prevo1p, prevo2p, true, dex, boldDigiPenMoves);
+			buf += pokedexRenderLearnsetEncodedList(splitP.addMoves, prevo1p, prevo2p, true, dex, boldModMoves);
 		}
 		buf += '<li class="resultheader"><h3>Level-up</h3></li>';
 		var lvPreview = [];
@@ -316,7 +316,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			var move2 = pokedexGetMoveForLearnsetRow(dex, pokedexLearnsetEncMoveid(encLv));
 			if (move2) {
 				var desc2 = encLv.substr(1, 3) === '001' || encLv.substr(1, 3) === '000' ? '&ndash;' : '<small>L</small>' + (parseInt(encLv.substr(1, 3), 10) || '?');
-				buf += pokedexMoveRowHtml(move2, desc2, move2.id, boldDigiPenMoves);
+				buf += pokedexMoveRowHtml(move2, desc2, move2.id, boldModMoves);
 			}
 		}
 		buf += '</ul>';
@@ -395,14 +395,14 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		var moves = built.moves;
 		var prevo1 = built.prevo1;
 		var prevo2 = built.prevo2;
-		var split = pokedexSplitLearnsetByModAdditions(this.id, pokemon, moves, this.dexMode === 'digipen');
-		var boldDigiPenMoves = pokedexIsDigiPenExclusive('pokemon', this.id) || this.dexMode === 'digipen';
+		var split = pokedexSplitLearnsetByModAdditions(this.id, pokemon, moves, this.dexMode === 'mod');
+		var boldModMoves = pokedexIsModExclusive('pokemon', this.id) || this.dexMode === 'mod';
 		if (split.addMoves.length) {
 			buf += '<li class="resultheader"><h3>Movepool additions</h3></li>';
-			buf += pokedexRenderLearnsetEncodedList(split.addMoves, prevo1, prevo2, true, dex, boldDigiPenMoves);
+			buf += pokedexRenderLearnsetEncodedList(split.addMoves, prevo1, prevo2, true, dex, boldModMoves);
 		}
 		if (split.mainMoves.length) {
-			buf += pokedexRenderLearnsetEncodedList(split.mainMoves, prevo1, prevo2, false, dex, boldDigiPenMoves);
+			buf += pokedexRenderLearnsetEncodedList(split.mainMoves, prevo1, prevo2, false, dex, boldModMoves);
 		} else if (!buf) {
 			buf += '<li class="content"><em>No learnset data.</em></li>';
 		}
@@ -413,10 +413,10 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		var pokemon = dex.species.get(this.id);
 		var buf = '';
 
-		// miscellaneous (sprites, color, habitat, DigiPen notes)
+		// miscellaneous (sprites, color, habitat, mod notes)
 		buf += '<li class="resultheader"><h3>Miscellaneous</h3></li>';
 		buf += '<li><dl class="colentry"><dt>Color:</dt><dd>' + Dex.escapeHTML(String(pokemon.color || '')) + '</dd></dl>';
-		if (pokedexShowDigiPenDexMetadata(this, 'pokemon') && pokemon.habitat && String(pokemon.habitat).trim()) {
+		if (pokedexShowModMetadata(this, 'pokemon') && pokemon.habitat && String(pokemon.habitat).trim()) {
 			buf += '<dl class="colentry"><dt>Habitat:</dt><dd>' + Dex.escapeHTML(String(pokemon.habitat).trim()) + '</dd></dl>';
 		}
 		buf += '<div style="clear:left"></div></li>';
@@ -491,7 +491,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			buf += '<table class="sprites"><tr><td><img src="' + Dex.resourcePrefix + 'sprites/gen1-back/' + pokemon.spriteid + '.png" /></td>';
 		}
 
-		if (pokedexShowDigiPenDexMetadata(this, 'pokemon')) {
+		if (pokedexShowModMetadata(this, 'pokemon')) {
 			var extraNotes = pokedexFormatNotesSectionHtml(pokemon.notes);
 			if (extraNotes) buf += '<li class="content">' + extraNotes + '</li>';
 			var extraAck = pokedexFormatAcknowledgementsSectionHtml(pokemon.artSource, pokemon.contributors);

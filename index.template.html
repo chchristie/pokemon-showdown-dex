@@ -38,6 +38,11 @@
 				<li><a class="button" href="https://smogon.com/forums/">Forum</a></li>
 				<li><a class="button nav-last" href="https://github.com/chchristie/pokemon-showdown-dex">GitHub</a></li>
 			</ul>
+			<!-- The gear is its own list rather than part of `nav-play`, which the narrow-screen rule
+			     hides: the mod switcher has to stay reachable at every width. -->
+			<ul class="nav-settings">
+				<li><button class="button dexsettings-button" name="dexsettings" aria-label="Settings" title="Settings"><i class="fa fa-cog" aria-hidden="true"></i></button></li>
+			</ul>
 			<ul class="nav-play">
 				<li><a class="button greenbutton" href="{{CLIENT_HOME}}">Play</a></li>
 			</ul>

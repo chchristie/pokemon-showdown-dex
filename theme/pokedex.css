@@ -610,3 +610,32 @@ a.subtle:hover {
 		display: inline;
 	}
 }
+
+/* DigiPen fork: the header's settings gear and its popup.
+   The gear holds the one site-wide choice the dex has — which custom content mod to show. It sits
+   in its own `nav-settings` list so the narrow-screen rule above, which hides `nav-play`, leaves it
+   alone. `.header .nav-play` in panels.css supplies the matching float and padding. */
+.header .nav-settings {
+	float: right;
+	padding: 8px 4px 0 0;
+	margin: 0;
+	list-style: none;
+}
+.nav-settings li {
+	display: inline;
+}
+.nav-settings .button {
+	padding: 2px 8px;
+	line-height: 20px;
+}
+.dexsettings-label {
+	font-weight: bold;
+}
+.dexsettings-select {
+	width: 100%;
+	margin-top: 2px;
+}
+.dexsettings-note {
+	color: #666666;
+	font-size: 9pt;
+}
