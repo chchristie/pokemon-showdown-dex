@@ -51,23 +51,24 @@ var PokedexSearchPanel = Panels.Panel.extend({
 				search.updateScroll();
 			});
 			if (fragment === 'pokemon/') {
-				search.setType('pokemon', 'digipendexnatdex');
+				search.setType('pokemon', pokedexSearchFormat());
 				$searchbox.attr('placeholder', 'Search pokemon OR filter by type, move, ability, egg group');
 				this.$('.buttonbar').remove();
 			} else if (fragment === 'moves/') {
-				search.setType('move', 'digipendexnatdex');
+				search.setType('move', pokedexSearchFormat());
 				$searchbox.attr('placeholder', 'Search moves OR filter by type, category, pokemon');
 				this.$('.buttonbar').remove();
 			} else if (fragment === 'abilities/') {
-				search.setType('ability', 'digipendexnatdex');
+				search.setType('ability', pokedexSearchFormat());
 				$searchbox.attr('placeholder', 'Search abilities OR filter by pokemon');
 				this.$('.buttonbar').remove();
 			} else if (fragment === 'items/') {
-				search.setType('item', 'digipendexnatdex');
+				search.setType('item', pokedexSearchFormat());
 				$searchbox.attr('placeholder', 'Search items OR filter by pokemon');
 				this.$('.buttonbar').remove();
 			} else {
-				search.engine.dex = Dex.mod('gen9digipen');
+				var searchMod = pokedexCurrentMod();
+				if (searchMod) search.engine.dex = Dex.mod(searchMod.id);
 			}
 			this.search.externalFilter = true;
 		} else {

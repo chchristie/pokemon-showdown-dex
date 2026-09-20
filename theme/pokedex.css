@@ -585,7 +585,7 @@ a.subtle:hover {
 }
 @media all and (min-width: 900px) {
 	.pfx-topbar .header {
-		max-width: 720px;
+		max-width: 760px;
 	}
 }
 
@@ -593,8 +593,10 @@ a.subtle:hover {
    The full six-button nav plus Play needs about 690px. Upstream collapses to Home plus the selected
    button at 520px, which was right for its two buttons and leaves 521-690px overflowing the topbar
    sideways here. Only the nav rules are repeated — upstream's 520px block also restyles the stats table
-   and ability entries, which have nothing to do with this and should keep their own breakpoint. */
-@media (max-width: 700px) {
+   and ability entries, which have nothing to do with this and should keep their own breakpoint.
+   The breakpoint is 760px rather than 690px because the settings gear now overlays the right corner:
+   the nav has to fold before it would run underneath. */
+@media (max-width: 760px) {
 	.header .nav-play {
 		display: none;
 	}
@@ -609,4 +611,42 @@ a.subtle:hover {
 		border-bottom-right-radius: 5px;
 		display: inline;
 	}
+}
+
+/* DigiPen fork: the header's settings gear and its popup.
+   The gear holds the one site-wide choice the dex has — which custom content mod to show. It sits
+   in its own `nav-settings` list so the narrow-screen rule above, which hides `nav-play`, leaves it
+   alone. `.header .nav-play` in panels.css supplies the matching float and padding. */
+/* The gear pins to the top bar's right corner rather than riding along at the end of the nav row.
+   `.pfx-topbar .header` below is a centred flex row, so a float is inert there and a flex item would
+   only reach the centred header's right edge, which on a wide screen is nowhere near the corner.
+   `.pfx-topbar` spans the full width, so positioning against it puts the gear where it belongs. */
+.pfx-topbar {
+	position: relative;
+}
+.pfx-topbar .nav-settings {
+	position: absolute;
+	top: 0;
+	right: 8px;
+	padding: 12px 0 0;
+	margin: 0;
+	list-style: none;
+}
+.nav-settings li {
+	display: inline;
+}
+.nav-settings .button {
+	padding: 2px 8px;
+	line-height: 20px;
+}
+.dexsettings-label {
+	font-weight: bold;
+}
+.dexsettings-select {
+	width: 100%;
+	margin-top: 2px;
+}
+/* Wide enough for the longest mod name in the dropdown, and no wider. */
+.pfx-popup.dexsettings-popup {
+	width: 190px;
 }
