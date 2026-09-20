@@ -135,10 +135,11 @@ function pokedexResolveLearnset(id, pokemon) {
 /**
  * True if `moveid` exists for this species only because of the gen9digipen learnset layer
  * (vanilla dist learnset had no entry for that move on that species id).
- * Populated at build time as `BattleLearnsetsDigiPenAdditions` in learnsets.js.
+ * Populated at build time as `BattleLearnsetsModAdditions[modid]` in learnsets.js.
+ * TODO(phase 5): read the mod the dex's mod switcher has selected instead of hardcoding DigiPen.
  */
 function pokedexLearnsetMoveDigipenOnlyVsVanilla(pokemonid, moveid) {
-	var add = window.BattleLearnsetsDigiPenAdditions;
+	var add = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
 	if (!add) return false;
 	var sp = Dex.species.get(pokemonid);
 	var baseId = toID(sp.baseSpecies);
@@ -160,7 +161,7 @@ function pokedexPokemonGainedMoveInDigipen(moveid, pokemonid) {
  * Used by the Pokémon page learnset split.
  */
 function pokedexDigiPenAdditionMoveIds(id, pokemon) {
-	var add = window.BattleLearnsetsDigiPenAdditions;
+	var add = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
 	if (!add) return {};
 	var baseId = toID(pokemon.baseSpecies);
 	var set = {};

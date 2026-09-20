@@ -493,7 +493,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 		var results = [];
 		var digiView = this.dexMode === 'digipen' || pokedexIsDigiPenExclusive('move', this.id);
 		var baseGameView = this.dexMode === 'base' && !pokedexIsDigiPenExclusive('move', this.id);
-		var additions = window.BattleLearnsetsDigiPenAdditions;
+		var additions = (window.BattleLearnsetsModAdditions || {})['gen9digipen'];
 		for (var pokemonid in BattleLearnsets) {
 			if (!BattlePokedex[pokemonid] || !BattleLearnsets[pokemonid]) continue;
 			if (BattlePokedex[pokemonid].isNonstandard) {

@@ -422,7 +422,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 		buf += '<div style="clear:left"></div></li>';
 
 		// animated gen 6
-		if (pokemon.num > 0 && pokemon.gen < 10 && this.id !== 'missingno' && this.id !== 'pichuspikyeared' && !pokemon.digipenSprite) {
+		if (pokemon.num > 0 && pokemon.gen < 10 && this.id !== 'missingno' && this.id !== 'pichuspikyeared' && !pokemon.customSprite) {
 			buf += '<li class="resultheader"><h3>Animated Gen 6-9 sprites</h3></li>';
 
 			buf += '<li class="content"><table class="sprites"><tr><td><img src="' + Dex.resourcePrefix + 'sprites/ani/' + pokemon.spriteid + '.gif" /></td>';
