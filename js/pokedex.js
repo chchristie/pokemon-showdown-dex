@@ -539,6 +539,7 @@ var PokedexSettingsPopup = Panels.Popup.extend({
 		'change select[name=dexmod]': 'changeMod'
 	},
 	initialize: function () {
+		this.$el.addClass('dexsettings-popup');
 		var mods = pokedexMods();
 		var current = pokedexCurrentMod();
 		var buf = '<h3>Settings</h3>';
@@ -553,8 +554,6 @@ var PokedexSettingsPopup = Panels.Popup.extend({
 					BattleLog.escapeHTML(mods[i].fullName) + '</option>';
 			}
 			buf += '</select></p>';
-			buf += '<p class="dexsettings-note">Each entry also has a &ldquo;Show base game data&rdquo; ' +
-				'checkbox for comparing against the base game.</p>';
 		}
 		this.html(buf);
 	},

@@ -635,7 +635,7 @@ a.subtle:hover {
 	width: 100%;
 	margin-top: 2px;
 }
-.dexsettings-note {
-	color: #666666;
-	font-size: 9pt;
+/* Wide enough for the longest mod name in the dropdown, and no wider. */
+.pfx-popup.dexsettings-popup {
+	width: 190px;
 }
