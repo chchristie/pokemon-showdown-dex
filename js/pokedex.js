@@ -432,14 +432,67 @@ function pokedexGetMoveForLearnsetRow(moveDex, moveid) {
 	return BattleMovedex[moveid];
 }
 
-function pokedexMoveRowHtml(move, desc, moveid, boldModEntries) {
-	var row = BattleSearch.renderTaggedMoveRow(move, desc);
+/**
+ * A move, item or ability's description text. Client #2740 moved base-game descriptions out of the
+ * data tables into BattleText, so reading `entry.desc` only worked for a mod's own entries (which
+ * still carry theirs). `dex.text` reads BattleText, applying the dex's gen layers and mod layer.
+ */
+function pokedexDesc(dex, entry, field) {
+	var text = dex.text && dex.text.get(entry);
+	return (text && text[field]) || entry[field] || '';
+}
+
+/**
+ * What to render search rows with. The static BattleSearch renders through the base-game Dex, whose
+ * text lookup never applies a mod's layer, so a mod-only move's description came out blank. A
+ * BattleSearch whose engine is the mod's dex reads that layer.
+ */
+function pokedexSearchRenderer(dex) {
+	if (!dex || dex === Dex) return BattleSearch;
+	var renderer = Object.create(BattleSearch.prototype);
+	renderer.engine = { dex: dex };
+	return renderer;
+}
+
+/** The dex for the mod picked site-wide in the header, or the base game's. */
+function pokedexSiteDex() {
+	var current = pokedexCurrentMod();
+	return current ? Dex.mod(current.id) : Dex;
+}
+
+/**
+ * A plain move row for a list page (Types, Tags). Those pages loop over the raw BattleMovedex
+ * table, whose entries aren't Move objects, so the text lookup inside the renderer found no
+ * description for any move. Render from a real Move through the site's dex instead.
+ */
+function pokedexMoveListRow(moveid) {
+	var dex = pokedexMoveListDex(moveid);
+	return pokedexSearchRenderer(dex).renderMoveRow(dex.moves.get(moveid));
+}
+
+function pokedexMoveListRowInner(moveid) {
+	var dex = pokedexMoveListDex(moveid);
+	return pokedexSearchRenderer(dex).renderMoveRowInner(dex.moves.get(moveid));
+}
+
+/** A mod's own move always renders from that mod's data (its text exists nowhere else). */
+function pokedexMoveListDex(moveid) {
+	var owner = pokedexEntryMod('move', moveid);
+	return owner ? Dex.mod(owner.id) : pokedexSiteDex();
+}
+
+function pokedexMoveRowHtml(move, desc, moveid, boldModEntries, moveDex) {
+	var row = pokedexSearchRenderer(moveDex).renderTaggedMoveRow(move, desc);
 	if (boldModEntries) {
 		// A mod's own moves carry its label as isNonstandard; rebalanced ones carry it as modified.
+		// Only the page's own mod counts: the shared move table also carries other mods' `modified`
+		// labels (DigiPen's Scald showed bold on FNAF pages).
+		var pageModId = moveDex && moveDex.modid;
+		var isPageMod = function (owner) { return !!owner && owner.id === pageModId; };
 		var mod =
-			(move && !!BattleCustomMods.byLabel(move.modified)) ||
-			(BattleMovedex[moveid] && !!BattleCustomMods.byLabel(BattleMovedex[moveid].modified)) ||
-			pokedexIsModExclusive('move', moveid);
+			(move && isPageMod(BattleCustomMods.byLabel(move.modified))) ||
+			(BattleMovedex[moveid] && isPageMod(BattleCustomMods.byLabel(BattleMovedex[moveid].modified))) ||
+			isPageMod(pokedexEntryMod('move', moveid));
 		if (mod) {
 			return row.replace(/<li class="result">/i, '<li class="result pokedex-modified-move">');
 		}
@@ -506,7 +559,7 @@ function pokedexRenderLearnsetEncodedList(moves, prevo1, prevo2, omitSectionHead
 		default:
 			desc = '';
 		}
-		buf += pokedexMoveRowHtml(move, desc, moveid, boldModEntries);
+		buf += pokedexMoveRowHtml(move, desc, moveid, boldModEntries, moveDex);
 	}
 	return buf;
 }
@@ -606,7 +659,7 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 		if (itemMod) {
 			buf += '<div class="warning">An item from ' + BattleLog.escapeHTML(itemMod.fullName) + '.</div>';
 		}
-		buf += '<p>'+Dex.escapeHTML(item.desc||item.shortDesc)+'</p>';
+		buf += '<p>'+Dex.escapeHTML(pokedexDesc(dex, item, 'desc'))+'</p>';
 		console.log(item.dexEntry);
 		buf += pokedexFormatPokemonStyleDexEntryHtml(item.dexEntry);
 
@@ -617,8 +670,10 @@ var PokedexItemPanel = PokedexResultPanel.extend({
 			var curGenItem = Dex.forGen(genNum).items.get(id);
 			var changes = '';
 
-			if (curGenItem.shortDesc !== nextGenItem.shortDesc) {
-				changes += curGenItem.shortDesc + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenItem.shortDesc + '<br />';
+			var curGenItemDesc = pokedexDesc(Dex.forGen(genNum), curGenItem, 'shortDesc');
+			var nextGenItemDesc = pokedexDesc(Dex.forGen(genNum + 1), nextGenItem, 'shortDesc');
+			if (curGenItemDesc !== nextGenItemDesc) {
+				changes += curGenItemDesc + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenItemDesc + '<br />';
 			}
 
 			if (changes) {
@@ -676,7 +731,7 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 			}
 		}
 
-		buf += '<p>'+Dex.escapeHTML(ability.desc)+'</p>';
+		buf += '<p>'+Dex.escapeHTML(pokedexDesc(dex, ability, 'desc'))+'</p>';
 
 		// past gens
 		var pastGenChanges = false;
@@ -685,8 +740,10 @@ var PokedexAbilityPanel = PokedexResultPanel.extend({
 			var curGenAbility = Dex.forGen(genNum).abilities.get(id);
 			var changes = '';
 
-			if (curGenAbility.shortDesc !== nextGenAbility.shortDesc) {
-				changes += curGenAbility.shortDesc + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenAbility.shortDesc + '<br />';
+			var curGenAbilityDesc = pokedexDesc(Dex.forGen(genNum), curGenAbility, 'shortDesc');
+			var nextGenAbilityDesc = pokedexDesc(Dex.forGen(genNum + 1), nextGenAbility, 'shortDesc');
+			if (curGenAbilityDesc !== nextGenAbilityDesc) {
+				changes += curGenAbilityDesc + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenAbilityDesc + '<br />';
 			}
 
 			if (changes) {
@@ -881,7 +938,7 @@ var PokedexTypePanel = PokedexResultPanel.extend({
 		for (var moveid in BattleMovedex) {
 			var move = BattleMovedex[moveid];
 			if (move.type === type && move.category === 'Physical') {
-				buf += BattleSearch.renderMoveRow(move);
+				buf += pokedexMoveListRow(moveid);
 			}
 		}
 		this.$('.utilichart').html(buf)
@@ -896,7 +953,7 @@ var PokedexTypePanel = PokedexResultPanel.extend({
 		for (var moveid in BattleMovedex) {
 			var move = BattleMovedex[moveid];
 			if (move.type === type) {
-				bufs[bufChart[move.category]] += BattleSearch.renderMoveRow(move);
+				bufs[bufChart[move.category]] += pokedexMoveListRow(moveid);
 			}
 		}
 		this.$('.utilichart').html(bufs.join(''))
@@ -1127,7 +1184,7 @@ var PokedexTagPanel = PokedexResultPanel.extend({
 		if (offscreen) {
 			return move.name;
 		} else {
-			return BattleSearch.renderMoveRowInner(move);
+			return pokedexMoveListRowInner(results[i]);
 		}
 	},
 	handleScroll: function() {

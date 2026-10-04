@@ -316,7 +316,7 @@ var PokedexPokemonPanel = PokedexResultPanel.extend({
 			var move2 = pokedexGetMoveForLearnsetRow(dex, pokedexLearnsetEncMoveid(encLv));
 			if (move2) {
 				var desc2 = encLv.substr(1, 3) === '001' || encLv.substr(1, 3) === '000' ? '&ndash;' : '<small>L</small>' + (parseInt(encLv.substr(1, 3), 10) || '?');
-				buf += pokedexMoveRowHtml(move2, desc2, move2.id, boldModMoves);
+				buf += pokedexMoveRowHtml(move2, desc2, move2.id, boldModMoves, dex);
 			}
 		}
 		buf += '</ul>';

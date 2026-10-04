@@ -113,7 +113,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 			buf += '<p>Usually moves first <em>(priority +' + move.priority + ')</em>.</p>';
 		}
 
-		buf += '<p>'+Dex.escapeHTML(move.desc||move.shortDesc)+'</p>';
+		buf += '<p>'+Dex.escapeHTML(pokedexDesc(dex, move, 'desc'))+'</p>';
 
 		if ('defrost' in move.flags) {
 			buf += '<p><a class="subtle" href="/tags/defrost" data-target="push">The user thaws out</a> if it is frozen.</p>';
@@ -249,7 +249,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				if (zMove.basePower) {
 					buf += '' + zMove.basePower + ' base power, ' + zMove.category + '</p>';
 				} else {
-					buf += zMove.shortDesc;
+					buf += pokedexDesc(dex, zMove, 'shortDesc');
 				}
 				buf += '</p>';
 			}
@@ -259,7 +259,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				if (zMove.basePower) {
 					buf += '' + zMove.basePower + ' base power, ' + zMove.category + '</p>';
 				} else {
-					buf += zMove.shortDesc;
+					buf += pokedexDesc(dex, zMove, 'shortDesc');
 				}
 				buf += '</p>';
 			}
@@ -318,7 +318,7 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				buf += '<p><strong><a href="/moves/maxguard" data-target="push">';
 				buf += 'Max Guard';
 				buf += '</a></strong>';
-				buf += move.shortDesc;
+				buf += pokedexDesc(dex, move, 'shortDesc');
 			}
 			if (move.type in gmaxMoveTable && move.category !== 'Status') {
 				for (let i = 0; i < gmaxMoveTable[move.type].length; i++) {
@@ -458,8 +458,8 @@ var PokedexMovePanel = PokedexResultPanel.extend({
 				changes += 'Category: ' + curGenCat + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenCat + '<br />';
 			}
 
-			var nextGenDesc = nextGenMove.shortDesc;
-			var curGenDesc = curGenMove.shortDesc;
+			var nextGenDesc = pokedexDesc(Dex.forGen(genNum + 1), nextGenMove, 'shortDesc');
+			var curGenDesc = pokedexDesc(Dex.forGen(genNum), curGenMove, 'shortDesc');
 			if (curGenDesc !== nextGenDesc) {
 				changes += curGenDesc + ' <i class="fa fa-long-arrow-right"></i> ' + nextGenDesc + '<br />';
 			}
